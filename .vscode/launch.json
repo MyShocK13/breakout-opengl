@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'opengl'",
+            "name": "Debug executable 'breakout'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=opengl",
-                    "--package=opengl"
+                    "--bin=breakout",
+                    "--package=breakout"
                 ],
                 "filter": {
-                    "name": "opengl",
+                    "name": "breakout",
                     "kind": "bin"
                 }
             },
@@ -25,16 +25,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'opengl'",
+            "name": "Debug unit tests in executable 'breakout'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=opengl",
-                    "--package=opengl"
+                    "--bin=breakout",
+                    "--package=breakout"
                 ],
                 "filter": {
-                    "name": "opengl",
+                    "name": "breakout",
                     "kind": "bin"
                 }
             },
