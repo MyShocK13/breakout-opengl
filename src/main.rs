@@ -22,11 +22,14 @@ mod lib {
     pub mod camera;
     pub mod common;
     pub mod shader;
+    pub mod sprite_renderer;
+    pub mod texture;
     pub mod window;
 }
 use lib::camera::Camera;
 use lib::common::{ process_events, processInput };
 use lib::shader::Shader;
+use lib::texture::Texture2D;
 use lib::window::Window;
 
 const SCR_WIDTH: u32 = 800;
@@ -42,13 +45,14 @@ fn main() {
     let mut lastX: f32 = SCR_WIDTH as f32 / 2.0;
     let mut lastY: f32 = SCR_HEIGHT as f32 / 2.0;
 
-    // timing
-    let mut deltaTime: f32; // time between current frame and last frame
-    let mut lastFrame: f32 = 0.0;
+    // Delta time variables
+    // -------------------
+    let mut delta_time: f32; // time between current frame and last frame
+    let mut last_frame: f32 = 0.0;
 
     let (mut glfw, mut window, events) = Window::create(SCR_WIDTH, SCR_HEIGHT, "BreakOut");
 
-    let (ourShader, VBO, VAO, texture1, texture2, cubePositions) = unsafe {
+    let (ourShader, VBO, VAO, texture1, cubePositions) = unsafe {
         // configure global opengl state
         // -----------------------------
         gl::Enable(gl::DEPTH_TEST);
@@ -137,63 +141,72 @@ fn main() {
 
         // load and create a texture
         // -------------------------
-        let (mut texture1, mut texture2) = (0, 0);
-        // texture 1
-        // ---------
-        gl::GenTextures(1, &mut texture1);
-        gl::BindTexture(gl::TEXTURE_2D, texture1);
-        // set the texture wrapping parameters
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32); // set texture wrapping to gl::REPEAT (default wrapping method)
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
-        // set texture filtering parameters
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
-        // load image, create texture and generate mipmaps
+        // let (mut texture1, mut texture2) = (0, 0);
+        // // texture 1
+        // // ---------
+        // gl::GenTextures(1, &mut texture1);
+        // gl::BindTexture(gl::TEXTURE_2D, texture1);
+        // // set the texture wrapping parameters
+        // gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32); // set texture wrapping to gl::REPEAT (default wrapping method)
+        // gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
+        // // set texture filtering parameters
+        // gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+        // gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+        // // load image, create texture and generate mipmaps
         let img = image::open(&Path::new("resources/textures/container.jpg")).expect("Failed to load texture");
         let data = img.clone().into_bytes();
-        gl::TexImage2D(gl::TEXTURE_2D,
-                       0,
-                       gl::RGB as i32,
-                       img.width() as i32,
-                       img.height() as i32,
-                       0,
-                       gl::RGB,
-                       gl::UNSIGNED_BYTE,
-                       &data[0] as *const u8 as *const c_void);
-        gl::GenerateMipmap(gl::TEXTURE_2D);
-        // texture 2
-        // ---------
-        gl::GenTextures(1, &mut texture2);
-        gl::BindTexture(gl::TEXTURE_2D, texture2);
-        // set the texture wrapping parameters
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32); // set texture wrapping to gl::REPEAT (default wrapping method)
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
-        // set texture filtering parameters
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
-        // load image, create texture and generate mipmaps
-        let img = image::open(&Path::new("resources/textures/awesomeface.png")).expect("Failed to load texture");
-        let img = img.flipv(); // flip loaded texture on the y-axis.
-        let data = img.clone().into_bytes();
-        // note that the awesomeface.png has transparency and thus an alpha channel, so make sure to tell OpenGL the data type is of GL_RGBA
-        gl::TexImage2D(gl::TEXTURE_2D,
-                       0,
-                       gl::RGB as i32,
-                       img.width() as i32,
-                       img.height() as i32,
-                       0,
-                       gl::RGBA,
-                       gl::UNSIGNED_BYTE,
-                       &data[0] as *const u8 as *const c_void);
-        gl::GenerateMipmap(gl::TEXTURE_2D);
+        // gl::TexImage2D(gl::TEXTURE_2D,
+        //                0,
+        //                gl::RGB as i32,
+        //                img.width() as i32,
+        //                img.height() as i32,
+        //                0,
+        //                gl::RGB,
+        //                gl::UNSIGNED_BYTE,
+        //                &data[0] as *const u8 as *const c_void);
+        // gl::GenerateMipmap(gl::TEXTURE_2D);
+        
+        let mut texture1 = Texture2D {
+            ..Texture2D::default()
+        };
+
+        texture1.generate(img.width(), img.height(), data);
+
+
+        // // texture 2
+        // // ---------
+        // gl::GenTextures(1, &mut texture2);
+        // gl::BindTexture(gl::TEXTURE_2D, texture2);
+        // // set the texture wrapping parameters
+        // gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32); // set texture wrapping to gl::REPEAT (default wrapping method)
+        // gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
+        // // set texture filtering parameters
+        // gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+        // gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+        // // load image, create texture and generate mipmaps
+        // let img = image::open(&Path::new("resources/textures/awesomeface.png")).expect("Failed to load texture");
+        // let img = img.flipv(); // flip loaded texture on the y-axis.
+        // let data = img.clone().into_bytes();
+        // // note that the awesomeface.png has transparency and thus an alpha channel, so make sure to tell OpenGL the data type is of GL_RGBA
+        // gl::TexImage2D(gl::TEXTURE_2D,
+        //                0,
+        //                gl::RGB as i32,
+        //                img.width() as i32,
+        //                img.height() as i32,
+        //                0,
+        //                gl::RGBA,
+        //                gl::UNSIGNED_BYTE,
+        //                &data[0] as *const u8 as *const c_void);
+        // gl::GenerateMipmap(gl::TEXTURE_2D);
 
         // tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
         // -------------------------------------------------------------------------------------------
         ourShader.useProgram();
         ourShader.setInt(c_str!("texture1"), 0);
-        ourShader.setInt(c_str!("texture2"), 1);
+        // ourShader.setInt(c_str!("texture2"), 1);
 
-        (ourShader, VBO, VAO, texture1, texture2, cubePositions)
+        // (ourShader, VBO, VAO, texture1, texture2, cubePositions)
+        (ourShader, VBO, VAO, texture1, cubePositions)
     };
 
     // render loop
@@ -201,20 +214,20 @@ fn main() {
     while !window.should_close() {
         // per-frame time logic
         // --------------------
-        let currentFrame = glfw.get_time() as f32;
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
+        let current_frame = glfw.get_time() as f32;
+        delta_time = current_frame - last_frame;
+        last_frame = current_frame;
 
-        // println!("{}", deltaTime);
+        // println!("{}", delta_time);
 
         // events
         // -----
         // process_events(&mut window, &events);
-        process_events(&events, &mut firstMouse, &mut lastX, &mut lastY, &mut camera);
+        // process_events(&events, &mut firstMouse, &mut lastX, &mut lastY, &mut camera);
 
         // input
         // -----
-        processInput(&mut window, deltaTime, &mut camera);
+        // processInput(&mut window, delta_time, &mut camera);
 
         // render
         // ------
@@ -224,9 +237,10 @@ fn main() {
 
             // bind textures on corresponding texture units
             gl::ActiveTexture(gl::TEXTURE0);
-            gl::BindTexture(gl::TEXTURE_2D, texture1);
-            gl::ActiveTexture(gl::TEXTURE1);
-            gl::BindTexture(gl::TEXTURE_2D, texture2);
+            // gl::BindTexture(gl::TEXTURE_2D, texture1);
+            texture1.bind();
+            // gl::ActiveTexture(gl::TEXTURE1);
+            // gl::BindTexture(gl::TEXTURE_2D, texture2);
 
             // activate shader
             ourShader.useProgram();
