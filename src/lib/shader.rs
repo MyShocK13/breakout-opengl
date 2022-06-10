@@ -1,7 +1,7 @@
 use gl;
 use self::gl::types::*;
 
-use cgmath::{Matrix, Matrix4, Vector3};
+use cgmath::{ Matrix, Matrix4, Vector3 };
 use cgmath::prelude::*;
 
 use std::ffi::{ CString, CStr };
