@@ -8,7 +8,6 @@ use self::gl::types::*;
 use cgmath::{ vec3, Vector2, Vector3, Matrix4, Rad };
 use cgmath::prelude::*;
 
-use crate::macros::*;
 use crate::lib::shader::Shader;
 use crate::lib::texture::Texture2D; 
 
@@ -34,9 +33,8 @@ impl SpriteRenderer {
             self.shader.useProgram();
 
             let mut model: Matrix4<f32> = Matrix4::identity();
-            model = model * Matrix4::<f32>::from_translation(vec3(0.5 * size.x, 0.5 * size.y, 0.0));
+            model = model * Matrix4::<f32>::from_translation(vec3(position.x, position.y, 0.0));
             model = model * Matrix4::<f32>::from_angle_z(Rad(rotate));
-            model = model * Matrix4::<f32>::from_translation(vec3(-0.5 * size.x, -0.5 * size.y, 0.0));
             model = model * Matrix4::<f32>::from_nonuniform_scale(size.x, size.y, 1.0);
 
             let text = CStr::from_bytes_with_nul_unchecked(concat!("model", "\0").as_bytes());
@@ -49,11 +47,12 @@ impl SpriteRenderer {
 
             gl::BindVertexArray(self.quad_vao);
             gl::DrawArrays(gl::TRIANGLES, 0, 6);
-            gl::BindVertexArray(0);
         }
     }
 
     fn init_render_data(&mut self) {
+        // set up vertex data (and buffer(s)) and configure vertex attributes
+        // ------------------------------------------------------------------
         let vertices: [f32; 24] = [
             // pos    // tex
             0.0, 1.0, 0.0, 1.0,
@@ -72,9 +71,6 @@ impl SpriteRenderer {
             gl::GenBuffers(1, &mut vbo);
 
             gl::BindVertexArray(self.quad_vao);
-            let stride = 4 * mem::size_of::<GLfloat>() as GLsizei;
-            gl::EnableVertexAttribArray(0);
-            gl::VertexAttribPointer(0, 4, gl::FLOAT, gl::FALSE, stride, ptr::null());
 
             gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
             gl::BufferData(gl::ARRAY_BUFFER,
@@ -82,8 +78,16 @@ impl SpriteRenderer {
                        &vertices[0] as *const f32 as *const c_void,
                        gl::STATIC_DRAW);
 
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);  
-            gl::BindVertexArray(0);
+            let stride = 4 * mem::size_of::<GLfloat>() as GLsizei;
+            // position attribute
+            gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE, stride, ptr::null());
+            gl::EnableVertexAttribArray(0);
+            // color attribute
+            // gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE, stride, (3 * mem::size_of::<GLfloat>()) as *const c_void);
+            // gl::EnableVertexAttribArray(1);
+            // texture coord attribute
+            gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE, stride, (2 * mem::size_of::<GLfloat>()) as *const c_void);
+            gl::EnableVertexAttribArray(1);
         }
     }
 }

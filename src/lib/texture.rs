@@ -61,6 +61,8 @@ impl Texture2D {
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, self.filter_min as i32);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, self.filter_max as i32);
 
+        gl::GenerateMipmap(gl::TEXTURE_2D);
+        
         // unbind texture
         gl::BindTexture(gl::TEXTURE_2D, 0);
     }

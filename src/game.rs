@@ -1,7 +1,7 @@
 use std::ffi::CStr;
 use std::path::Path;
 
-use cgmath::{ vec2, vec3, Matrix4, Deg, perspective};
+use cgmath::{ vec2, vec3, Matrix4, Deg, ortho, perspective};
 
 use crate::lib::shader::Shader;
 use crate::lib::sprite_renderer::SpriteRenderer;
@@ -38,15 +38,17 @@ impl Game {
     }
 
     pub unsafe fn init(&self) {
+        // build and compile our shader program
+        // ------------------------------------
         let shader = Shader::new(
-            "resources/shaders/sprite_vs.glsl",
-            "resources/shaders/sprite_fs.glsl");
+            "resources/shaders/vertexShader.glsl",
+            "resources/shaders/fragmentShader.glsl");
 
-        let projection: Matrix4<f32> = perspective(Deg(45.0), self.width as f32 / self.height as f32 , 0.1, 100.0);
+        let projection: Matrix4<f32> = ortho(0.0, self.width as f32, 0.0, self.height as f32, -1.0, 1.0);
 
         shader.useProgram();
-        let text = CStr::from_bytes_with_nul_unchecked(concat!("image", "\0").as_bytes());
-        shader.setInt(text, 0);
+        // let text = CStr::from_bytes_with_nul_unchecked(concat!("image", "\0").as_bytes());
+        // shader.setInt(text, 0);
         let text = CStr::from_bytes_with_nul_unchecked(concat!("projection", "\0").as_bytes());
         shader.setMat4(text, &projection);
 
@@ -58,12 +60,12 @@ impl Game {
     // }
 
     pub unsafe fn render(&self) {
-        let img = image::open(&Path::new("resources/textures/awesomeface.png")).expect("Failed to load texture");
+        let img = image::open(&Path::new("resources/textures/container.jpg")).expect("Failed to load texture");
         let data = img.clone().into_bytes();
         
         let mut texture = Texture2D::default();
         texture.generate(img.width(), img.height(), data);
 
-        RENDERER.draw_sprite(&texture, vec2(0.0, 0.0), vec2(300.0, 400.0), 45.0, vec3(0.0, 1.0, 0.0))
+        RENDERER.draw_sprite(&texture, vec2(200.0, 200.0), vec2(300.0, 300.0), 0.0, vec3(1.0, 1.0, 1.0))
     }
 }
