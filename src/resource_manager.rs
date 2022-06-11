@@ -39,6 +39,12 @@ impl<'a> ResourceManager<'a> {
         let data = img.clone().into_bytes();
         
         let mut texture = Texture2D::default();
+
+        if alpha {
+            texture.internal_format = gl::RGBA;
+            texture.image_format = gl::RGBA;
+        }
+
         unsafe {
             texture.generate(img.width(), img.height(), data);
         }

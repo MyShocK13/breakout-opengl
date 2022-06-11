@@ -53,7 +53,7 @@ impl Game {
             "main"
         );
 
-        RESOURCES.lock().unwrap().load_texture("resources/textures/container.jpg", false, "background");
+        RESOURCES.lock().unwrap().load_texture("resources/textures/awesomeface.png", true, "background");
 
         let projection: Matrix4<f32> = ortho(0.0, self.width as f32, 0.0, self.height as f32, -1.0, 1.0);
 
