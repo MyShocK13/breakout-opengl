@@ -28,11 +28,11 @@ impl<'a> ResourceManager<'a> {
         shader
     }
 
-    pub fn get_shader(&self, name: &str) -> Shader {
-        let shader = self.shaders.get(name).unwrap();
+    // pub fn get_shader(&self, name: &str) -> Shader {
+    //     let shader = self.shaders.get(name).unwrap();
 
-        *shader
-    }
+    //     *shader
+    // }
 
     pub fn load_texture(&mut self, path: &str, alpha: bool, name: &'a str) -> Texture2D {
         let img = image::open(&Path::new(path)).expect("Failed to load texture");

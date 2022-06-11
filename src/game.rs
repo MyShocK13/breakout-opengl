@@ -1,28 +1,17 @@
 use std::sync::Mutex;
-use std::rc::Rc;
-use std::cell::RefCell;
-use std::collections::HashMap;
 use std::ffi::CStr;
-use std::path::Path;
 
-use cgmath::{ vec2, vec3, Matrix4, Deg, ortho, perspective};
+use cgmath::{ vec2, vec3, Matrix4, ortho};
 
 use crate::lib::shader::Shader;
 use crate::lib::sprite_renderer::SpriteRenderer;
-use crate::lib::texture::Texture2D;
 use crate::resource_manager::ResourceManager;
 
+#[derive(PartialEq)]
 pub enum GameState {
     GameActive,
-    GameMenu,
-    GameWin
-}
-
-pub struct Game {
-    pub state: GameState,
-    pub keys: Vec<bool>,
-    pub width: u32,
-    pub height: u32,
+    // GameMenu,
+    // GameWin
 }
 
 static mut RENDERER: SpriteRenderer = SpriteRenderer {
@@ -32,6 +21,13 @@ static mut RENDERER: SpriteRenderer = SpriteRenderer {
 
 lazy_static! {
     static ref RESOURCES: Mutex<ResourceManager<'static>> = Mutex::new(ResourceManager::new());
+}
+
+pub struct Game {
+    pub state: GameState,
+    pub keys: Vec<bool>,
+    pub width: u32,
+    pub height: u32,
 }
 
 impl Game {
@@ -53,7 +49,10 @@ impl Game {
             "main"
         );
 
-        RESOURCES.lock().unwrap().load_texture("resources/textures/awesomeface.png", true, "background");
+        RESOURCES.lock().unwrap().load_texture("resources/textures/background.jpg", false, "background");
+        RESOURCES.lock().unwrap().load_texture("resources/textures/awesomeface.png", true, "face");
+        RESOURCES.lock().unwrap().load_texture("resources/textures/block.png", false, "block");
+        RESOURCES.lock().unwrap().load_texture("resources/textures/block_solid.png", false, "block_solid");
 
         let projection: Matrix4<f32> = ortho(0.0, self.width as f32, 0.0, self.height as f32, -1.0, 1.0);
 
@@ -71,7 +70,9 @@ impl Game {
     // }
 
     pub unsafe fn render(&self) {
-        let texture = RESOURCES.lock().unwrap().get_texture("background");
-        RENDERER.draw_sprite(&texture, vec2(200.0, 200.0), vec2(300.0, 300.0), 0.0, vec3(1.0, 1.0, 1.0))
+        if self.state == GameState::GameActive {
+            let texture = RESOURCES.lock().unwrap().get_texture("background");
+            RENDERER.draw_sprite(&texture, vec2(0.0, 0.0), vec2(self.width as f32, self.height as f32), 0.0, vec3(1.0, 1.0, 1.0));
+        }
     }
 }
