@@ -1,11 +1,12 @@
 use std::collections::HashMap;
+use std::path::Path;
 
 use crate::lib::shader::Shader;
 use crate::lib::texture::Texture2D;
 
 pub struct ResourceManager<'a> {
     pub shaders: HashMap<&'a str, Shader>,
-    pub textures: HashMap<&'a str, &'a Texture2D>,
+    pub textures: HashMap<&'a str, Texture2D>,
 }
 
 impl<'a> ResourceManager<'a> {
@@ -31,5 +32,25 @@ impl<'a> ResourceManager<'a> {
         let shader = self.shaders.get(name).unwrap();
 
         *shader
+    }
+
+    pub fn load_texture(&mut self, path: &str, alpha: bool, name: &'a str) -> Texture2D {
+        let img = image::open(&Path::new(path)).expect("Failed to load texture");
+        let data = img.clone().into_bytes();
+        
+        let mut texture = Texture2D::default();
+        unsafe {
+            texture.generate(img.width(), img.height(), data);
+        }
+
+        self.textures.insert(name, texture);
+
+        texture
+    }
+
+    pub fn get_texture(&self, name: &str) -> Texture2D {
+        let texture = self.textures.get(name).unwrap();
+
+        *texture
     }
 }
