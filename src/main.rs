@@ -32,12 +32,8 @@ fn main() {
 
     let (mut glfw, mut window, _events) = Window::create(SCR_WIDTH, SCR_HEIGHT, "BreakOut");
 
-    let breakout = Game::new(SCR_WIDTH, SCR_HEIGHT);
+    let mut breakout = Game::new(SCR_WIDTH, SCR_HEIGHT);
     unsafe {
-        // configure global opengl state
-        // -----------------------------
-        gl::Enable(gl::DEPTH_TEST);
-
         breakout.init();
     }
 
@@ -55,8 +51,8 @@ fn main() {
         // render
         // ------
         unsafe {
-            gl::ClearColor(0.2, 0.3, 0.3, 1.0);
-            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+            gl::ClearColor(0.0, 0.0, 0.0, 1.0);
+            gl::Clear(gl::COLOR_BUFFER_BIT);
 
             breakout.render();
         }

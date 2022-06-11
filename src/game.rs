@@ -1,11 +1,12 @@
 use std::sync::Mutex;
 use std::ffi::CStr;
 
-use cgmath::{ vec2, vec3, Matrix4, ortho};
+use cgmath::{ vec2, Vector2, vec3, Matrix4, ortho};
 
 use crate::lib::shader::Shader;
 use crate::lib::sprite_renderer::SpriteRenderer;
 use crate::resource_manager::ResourceManager;
+use crate::game_object::GameObject;
 
 #[derive(PartialEq)]
 pub enum GameState {
@@ -21,13 +22,20 @@ static mut RENDERER: SpriteRenderer = SpriteRenderer {
 
 lazy_static! {
     static ref RESOURCES: Mutex<ResourceManager<'static>> = Mutex::new(ResourceManager::new());
+    // static ref PLAYER: Mutex<GameObject> = Mutex::new(GameObject::new_empty());
 }
+
+// Initial size of the player paddle
+const PLAYER_SIZE: Vector2<f32> = vec2(100.0, 20.0);
+// Initial velocity of the player paddle
+const _PLAYER_VELOCITY: f32 = 500.0;
 
 pub struct Game {
     pub state: GameState,
     pub keys: Vec<bool>,
     pub width: u32,
     pub height: u32,
+    pub player: GameObject,
 }
 
 impl Game {
@@ -36,13 +44,14 @@ impl Game {
             state: GameState::GameActive,
             keys: Vec::new(),
             width: width,
-            height: height
+            height: height,
+            player: GameObject::new_empty(),
         };
 
         game
     }
 
-    pub unsafe fn init(&self) {
+    pub unsafe fn init(&mut self) {
         let shader = RESOURCES.lock().unwrap().load_shader(
             "resources/shaders/vertexShader.glsl",
             "resources/shaders/fragmentShader.glsl",
@@ -53,6 +62,7 @@ impl Game {
         RESOURCES.lock().unwrap().load_texture("resources/textures/awesomeface.png", true, "face");
         RESOURCES.lock().unwrap().load_texture("resources/textures/block.png", false, "block");
         RESOURCES.lock().unwrap().load_texture("resources/textures/block_solid.png", false, "block_solid");
+        let player_texture = RESOURCES.lock().unwrap().load_texture("resources/textures/paddle.png", true, "paddle");
 
         let projection: Matrix4<f32> = ortho(0.0, self.width as f32, 0.0, self.height as f32, -1.0, 1.0);
 
@@ -63,6 +73,13 @@ impl Game {
         shader.setMat4(text, &projection);
 
         RENDERER = SpriteRenderer::new(shader);
+
+        let player_pos = vec2(
+            self.width as f32 / 2.0 - PLAYER_SIZE.x / 2.0,
+            0.0
+        );
+
+        self.player = GameObject::new(player_pos, PLAYER_SIZE, vec2(0.0, 0.0), vec3(1.0, 1.0 ,1.0), 0.0, player_texture);
     }
 
     // pub fn update(dt: f32) {
@@ -74,5 +91,6 @@ impl Game {
             let texture = RESOURCES.lock().unwrap().get_texture("background");
             RENDERER.draw_sprite(&texture, vec2(0.0, 0.0), vec2(self.width as f32, self.height as f32), 0.0, vec3(1.0, 1.0, 1.0));
         }
+        self.player.draw(&RENDERER);
     }
 }

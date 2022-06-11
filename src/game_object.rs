@@ -1,10 +1,9 @@
-use cgmath::{ vec3, Vector2, Vector3, Matrix4, Rad };
-use cgmath::prelude::*;
+use cgmath::{ vec2, vec3, Vector2, Vector3 };
 
 use crate::lib::texture::Texture2D;
 use crate::lib::sprite_renderer::SpriteRenderer;
 
-struct GameObject {
+pub struct GameObject {
     // object state
     pub position: Vector2<f32>,
     pub size: Vector2<f32>,
@@ -18,6 +17,21 @@ struct GameObject {
 }
 
 impl GameObject {
+    pub fn new_empty() -> Self {
+        let game_object = GameObject {
+            position: vec2(0.0, 0.0),
+            size: vec2(1.0, 1.0),
+            velocity: vec2(0.0, 0.0),
+            color: vec3(1.0, 1.0, 1.0),
+            rotation: 0.0,
+            is_solid: false,
+            destroyed: false,
+            sprite: Texture2D::default(),
+        };
+
+        game_object
+    }
+
     pub fn new(pos: Vector2<f32>, size: Vector2<f32>, vel: Vector2<f32>, color: Vector3<f32>, rotation: f32, sprite: Texture2D) -> Self {
         let game_object = GameObject {
             position: pos,

@@ -28,6 +28,13 @@ impl Window {
         // ---------------------------------------
         gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
 
+        // configure global opengl state
+        // -----------------------------
+        unsafe {
+            gl::Enable(gl::BLEND);
+            gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+        }
+
         (glfw, window, events)
     }
 }
