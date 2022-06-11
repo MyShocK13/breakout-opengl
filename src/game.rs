@@ -53,6 +53,8 @@ impl Game {
             "main"
         );
 
+        RESOURCES.lock().unwrap().load_texture("resources/textures/container.jpg", false, "background");
+
         let projection: Matrix4<f32> = ortho(0.0, self.width as f32, 0.0, self.height as f32, -1.0, 1.0);
 
         shader.useProgram();
@@ -69,12 +71,7 @@ impl Game {
     // }
 
     pub unsafe fn render(&self) {
-        let img = image::open(&Path::new("resources/textures/container.jpg")).expect("Failed to load texture");
-        let data = img.clone().into_bytes();
-        
-        let mut texture = Texture2D::default();
-        texture.generate(img.width(), img.height(), data);
-
+        let texture = RESOURCES.lock().unwrap().get_texture("background");
         RENDERER.draw_sprite(&texture, vec2(200.0, 200.0), vec2(300.0, 300.0), 0.0, vec3(1.0, 1.0, 1.0))
     }
 }
