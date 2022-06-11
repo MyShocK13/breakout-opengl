@@ -1,3 +1,7 @@
+use std::sync::Mutex;
+use std::rc::Rc;
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::ffi::CStr;
 use std::path::Path;
 
@@ -6,6 +10,7 @@ use cgmath::{ vec2, vec3, Matrix4, Deg, ortho, perspective};
 use crate::lib::shader::Shader;
 use crate::lib::sprite_renderer::SpriteRenderer;
 use crate::lib::texture::Texture2D;
+use crate::resource_manager::ResourceManager;
 
 pub enum GameState {
     GameActive,
@@ -25,6 +30,10 @@ static mut RENDERER: SpriteRenderer = SpriteRenderer {
     quad_vao: 0
 };
 
+lazy_static! {
+    static ref RESOURCES: Mutex<ResourceManager<'static>> = Mutex::new(ResourceManager::new());
+}
+
 impl Game {
     pub fn new(width: u32, height: u32) -> Game {
         let game = Game {
@@ -38,11 +47,11 @@ impl Game {
     }
 
     pub unsafe fn init(&self) {
-        // build and compile our shader program
-        // ------------------------------------
-        let shader = Shader::new(
+        let shader = RESOURCES.lock().unwrap().load_shader(
             "resources/shaders/vertexShader.glsl",
-            "resources/shaders/fragmentShader.glsl");
+            "resources/shaders/fragmentShader.glsl",
+            "main"
+        );
 
         let projection: Matrix4<f32> = ortho(0.0, self.width as f32, 0.0, self.height as f32, -1.0, 1.0);
 

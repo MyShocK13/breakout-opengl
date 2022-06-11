@@ -1,10 +1,15 @@
 extern crate glfw;
 use self::glfw::{ Context };
 
+#[macro_use]
+extern crate lazy_static;
+
 use gl;
 
 mod game;
 use game::Game;
+mod game_object;
+mod resource_manager;
 mod macros;
 mod lib {
     pub mod camera;

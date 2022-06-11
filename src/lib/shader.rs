@@ -10,6 +10,7 @@ use std::io::Read;
 use std::ptr;
 use std::str;
 
+#[derive(Copy, Clone)]
 pub struct Shader {
     pub ID: u32,
 }
