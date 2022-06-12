@@ -18,7 +18,7 @@ pub enum GameState {
 }
 
 static mut RENDERER: SpriteRenderer = SpriteRenderer {
-    shader: Shader { ID: 0 },
+    shader: Shader { id: 0 },
     quad_vao: 0
 };
 
@@ -68,11 +68,11 @@ impl Game {
 
         let projection: Matrix4<f32> = ortho(0.0, self.width as f32, 0.0, self.height as f32, -1.0, 1.0);
 
-        shader.useProgram();
+        shader.use_program();
         // let text = CStr::from_bytes_with_nul_unchecked(concat!("image", "\0").as_bytes());
         // shader.setInt(text, 0);
         let text = CStr::from_bytes_with_nul_unchecked(concat!("projection", "\0").as_bytes());
-        shader.setMat4(text, &projection);
+        shader.set_mat4(text, &projection);
 
         RENDERER = SpriteRenderer::new(shader);
 

@@ -30,7 +30,7 @@ impl SpriteRenderer {
 
     pub fn draw_sprite(&self, texture: &Texture2D, position: Vector2<f32>, size: Vector2<f32>, rotate: f32, color: Vector3<f32>) {
         unsafe {
-            self.shader.useProgram();
+            self.shader.use_program();
 
             let mut model: Matrix4<f32> = Matrix4::identity();
             model = model * Matrix4::<f32>::from_translation(vec3(position.x, position.y, 0.0));
@@ -38,9 +38,9 @@ impl SpriteRenderer {
             model = model * Matrix4::<f32>::from_nonuniform_scale(size.x, size.y, 1.0);
 
             let text = CStr::from_bytes_with_nul_unchecked(concat!("model", "\0").as_bytes());
-            self.shader.setMat4(text, &model);
+            self.shader.set_mat4(text, &model);
             let text = CStr::from_bytes_with_nul_unchecked(concat!("spriteColor", "\0").as_bytes());
-            self.shader.setVector3(text, &color);
+            self.shader.set_vector3(text, &color);
         
             gl::ActiveTexture(gl::TEXTURE0);
             texture.bind();
