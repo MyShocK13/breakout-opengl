@@ -1,12 +1,14 @@
 use std::sync::Mutex;
 use std::ffi::CStr;
 
+use glfw::{ Key, Action };
+
 use cgmath::{ vec2, Vector2, vec3, Matrix4, ortho};
 
+use crate::game_object::GameObject;
 use crate::lib::shader::Shader;
 use crate::lib::sprite_renderer::SpriteRenderer;
 use crate::resource_manager::ResourceManager;
-use crate::game_object::GameObject;
 
 #[derive(PartialEq)]
 pub enum GameState {
@@ -28,7 +30,7 @@ lazy_static! {
 // Initial size of the player paddle
 const PLAYER_SIZE: Vector2<f32> = vec2(100.0, 20.0);
 // Initial velocity of the player paddle
-const _PLAYER_VELOCITY: f32 = 500.0;
+const PLAYER_VELOCITY: f32 = 500.0;
 
 pub struct Game {
     pub state: GameState,
@@ -88,9 +90,26 @@ impl Game {
 
     pub unsafe fn render(&self) {
         if self.state == GameState::GameActive {
-            let texture = RESOURCES.lock().unwrap().get_texture("background");
-            RENDERER.draw_sprite(&texture, vec2(0.0, 0.0), vec2(self.width as f32, self.height as f32), 0.0, vec3(1.0, 1.0, 1.0));
+            let background_tex = RESOURCES.lock().unwrap().get_texture("background");
+            RENDERER.draw_sprite(&background_tex, vec2(0.0, 0.0), vec2(self.width as f32, self.height as f32), 0.0, vec3(1.0, 1.0, 1.0));
         }
         self.player.draw(&RENDERER);
+    }
+
+    pub fn process_input(&mut self, window: &glfw::Window, dt: f32) {
+        if self.state == GameState::GameActive {
+            let velocity = PLAYER_VELOCITY * dt;
+            // move paddle
+            if window.get_key(Key::A) == Action::Press {
+                if self.player.position.x >= 0.0 {
+                    self.player.position.x -= velocity;
+                }
+            }
+            if window.get_key(Key::D) == Action::Press {
+                if self.player.position.x <= self.width as f32 - self.player.size.x {
+                    self.player.position.x += velocity;
+                }
+            }
+        }
     }
 }

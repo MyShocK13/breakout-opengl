@@ -10,10 +10,7 @@ mod game;
 use game::Game;
 mod game_object;
 mod resource_manager;
-mod macros;
 mod lib {
-    pub mod camera;
-    pub mod common;
     pub mod shader;
     pub mod sprite_renderer;
     pub mod texture;
@@ -27,11 +24,15 @@ const SCR_HEIGHT: u32 = 600;
 fn main() {
     // Delta time variables
     // -------------------
-    let mut _delta_time: f32; // time between current frame and last frame
+    let mut delta_time: f32; // time between current frame and last frame
     let mut last_frame: f32 = 0.0;
 
+    // Window
+    // ------
     let (mut glfw, mut window, _events) = Window::create(SCR_WIDTH, SCR_HEIGHT, "BreakOut");
 
+    // Game initialization
+    // -------------------
     let mut breakout = Game::new(SCR_WIDTH, SCR_HEIGHT);
     unsafe {
         breakout.init();
@@ -43,10 +44,14 @@ fn main() {
         // per-frame time logic
         // --------------------
         let current_frame = glfw.get_time() as f32;
-        _delta_time = current_frame - last_frame;
+        delta_time = current_frame - last_frame;
         last_frame = current_frame;
 
         // println!("{}", delta_time);
+
+        // input
+        // -----
+        breakout.process_input(&window, delta_time);
 
         // render
         // ------
