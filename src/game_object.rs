@@ -32,13 +32,13 @@ impl GameObject {
         game_object
     }
 
-    pub fn new(pos: Vector2<f32>, size: Vector2<f32>, vel: Vector2<f32>, color: Vector3<f32>, rotation: f32, sprite: Texture2D) -> Self {
+    pub fn new(pos: Vector2<f32>, size: Vector2<f32>, color: Vector3<f32>, sprite: Texture2D) -> Self {
         let game_object = GameObject {
             position: pos,
             size: size,
-            velocity: vel,
+            velocity: vec2(0.0, 0.0),
             color: color,
-            rotation: rotation,
+            rotation: 0.0,
             is_solid: false,
             destroyed: false,
             sprite: sprite

@@ -8,6 +8,7 @@ use gl;
 
 mod game;
 use game::Game;
+mod game_level;
 mod game_object;
 mod resource_manager;
 mod lib {
