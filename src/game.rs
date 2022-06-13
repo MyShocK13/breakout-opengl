@@ -76,7 +76,7 @@ impl Game {
         one.load(RESOURCES.lock().unwrap(), "resources/levels/one.lvl", self.width, self.height / 2 );
         self.levels.push(one);
 
-        let projection: Matrix4<f32> = ortho(0.0, self.width as f32, 0.0, self.height as f32, -1.0, 1.0);
+        let projection: Matrix4<f32> = ortho(0.0, self.width as f32, self.height as f32, 0.0, -1.0, 1.0);
 
         shader.use_program();
         // let text = CStr::from_bytes_with_nul_unchecked(concat!("image", "\0").as_bytes());
@@ -88,7 +88,7 @@ impl Game {
 
         let player_pos = vec2(
             self.width as f32 / 2.0 - PLAYER_SIZE.x / 2.0,
-            0.0
+            self.height as f32 - PLAYER_SIZE.y
         );
 
         self.player = GameObject::new(player_pos, PLAYER_SIZE, vec3(1.0, 1.0 ,1.0), player_texture);
