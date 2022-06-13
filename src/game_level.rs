@@ -34,7 +34,6 @@ impl GameLevel {
                 row.push(number.parse::<u32>().unwrap());
             }
             tile_data.push(row);
-            println!("{:?}", tile_data);
         }
 
         if tile_data.len() > 0 {

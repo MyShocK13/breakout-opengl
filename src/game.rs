@@ -5,6 +5,7 @@ use glfw::{ Key, Action };
 
 use cgmath::{ vec2, Vector2, vec3, Matrix4, ortho};
 
+use crate::ball::Ball;
 use crate::game_level::GameLevel;
 use crate::game_object::GameObject;
 use crate::lib::shader::Shader;
@@ -32,12 +33,17 @@ lazy_static! {
 const PLAYER_SIZE: Vector2<f32> = vec2(100.0, 20.0);
 // Initial velocity of the player paddle
 const PLAYER_VELOCITY: f32 = 500.0;
+// Initial velocity of the Ball
+const INITIAL_BALL_VELOCITY: Vector2<f32> = vec2(100.0, -350.0);
+// Radius of the ball object
+const BALL_RADIUS: f32 = 12.5;
 
 pub struct Game {
     pub state: GameState,
     pub width: u32,
     pub height: u32,
     pub player: GameObject,
+    pub ball: Ball,
     pub levels: Vec<GameLevel>,
     pub actual_level: usize,
 }
@@ -49,6 +55,7 @@ impl Game {
             width: width,
             height: height,
             player: GameObject::new_empty(),
+            ball: Ball::new_empty(),
             levels: Vec::new(),
             actual_level: 0
         };
@@ -66,7 +73,7 @@ impl Game {
 
         // load textures
         RESOURCES.lock().unwrap().load_texture("resources/textures/background.jpg", false, "background");
-        RESOURCES.lock().unwrap().load_texture("resources/textures/awesomeface.png", true, "face");
+        let ball_texture = RESOURCES.lock().unwrap().load_texture("resources/textures/awesomeface.png", true, "face");
         RESOURCES.lock().unwrap().load_texture("resources/textures/block.png", false, "block");
         RESOURCES.lock().unwrap().load_texture("resources/textures/block_solid.png", false, "block_solid");
         let player_texture = RESOURCES.lock().unwrap().load_texture("resources/textures/paddle.png", true, "paddle");
@@ -95,12 +102,22 @@ impl Game {
 
         RENDERER = SpriteRenderer::new(shader);
 
+        // Player initialization
+        //----------------------
         let player_pos = vec2(
             self.width as f32 / 2.0 - PLAYER_SIZE.x / 2.0,
             self.height as f32 - PLAYER_SIZE.y
         );
 
         self.player = GameObject::new(player_pos, PLAYER_SIZE, vec3(1.0, 1.0 ,1.0), player_texture);
+
+        // Ball init
+        //----------
+        let ball_pos = player_pos + vec2(
+            PLAYER_SIZE.x / 2.0 - BALL_RADIUS,
+            -BALL_RADIUS * 2.0
+        );
+        self.ball = Ball::new(ball_pos, BALL_RADIUS, INITIAL_BALL_VELOCITY, ball_texture);
     }
 
     // pub fn update(dt: f32) {
@@ -116,6 +133,7 @@ impl Game {
             self.levels[self.actual_level].draw(&RENDERER);
         }
         self.player.draw(&RENDERER);
+        self.ball.draw(&RENDERER);
     }
 
     pub fn process_input(&mut self, window: &glfw::Window, dt: f32) {

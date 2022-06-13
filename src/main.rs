@@ -6,6 +6,7 @@ extern crate lazy_static;
 
 use gl;
 
+mod ball;
 mod game;
 use game::Game;
 mod game_level;
