@@ -53,6 +53,17 @@ impl GameLevel {
                     // check block type from level data (2D level array)
                     if *brick == 1 { // solid
                         let color = vec3(0.8, 0.8, 0.7);
+                        let sprite = resources.get_texture("block_solid");
+                        let obj = GameObject::new(pos, size, color, sprite);
+                        self.bricks.push(obj);
+                    } else if *brick > 1 {
+                        let color = match *brick {
+                            2 => vec3(0.2, 0.6, 1.0),
+                            3 => vec3(0.0, 0.7, 0.0),
+                            4 => vec3(0.8, 0.8, 0.4),
+                            5 => vec3(1.0, 0.5, 0.0),
+                            _ => vec3(1.0, 1.0, 1.0)
+                        };
                         let sprite = resources.get_texture("block");
                         let obj = GameObject::new(pos, size, color, sprite);
                         self.bricks.push(obj);
