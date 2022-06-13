@@ -47,27 +47,28 @@ impl GameLevel {
             // initialize level tiles based on tileData
             for (y, row) in tile_data.iter().enumerate() {
                 for (x, brick) in row.iter().enumerate() {
+                    if *brick == 0 {
+                        continue;
+                    }
+
                     let pos = vec2((unit_width * x as u32) as f32, (unit_height * y as u32) as f32);
                     let size = vec2(unit_width as f32, unit_height as f32);
-
+                    let color = match *brick {
+                        1 => vec3(0.8, 0.8, 0.7),
+                        2 => vec3(0.2, 0.6, 1.0),
+                        3 => vec3(0.0, 0.7, 0.0),
+                        4 => vec3(0.8, 0.8, 0.4),
+                        5 => vec3(1.0, 0.5, 0.0),
+                        _ => vec3(1.0, 1.0, 1.0)
+                    };
                     // check block type from level data (2D level array)
-                    if *brick == 1 { // solid
-                        let color = vec3(0.8, 0.8, 0.7);
-                        let sprite = resources.get_texture("block_solid");
-                        let obj = GameObject::new(pos, size, color, sprite);
-                        self.bricks.push(obj);
-                    } else if *brick > 1 {
-                        let color = match *brick {
-                            2 => vec3(0.2, 0.6, 1.0),
-                            3 => vec3(0.0, 0.7, 0.0),
-                            4 => vec3(0.8, 0.8, 0.4),
-                            5 => vec3(1.0, 0.5, 0.0),
-                            _ => vec3(1.0, 1.0, 1.0)
-                        };
-                        let sprite = resources.get_texture("block");
-                        let obj = GameObject::new(pos, size, color, sprite);
-                        self.bricks.push(obj);
-                    }
+                    let sprite = match *brick {
+                        1 => resources.get_texture("block_solid"),
+                        _ => resources.get_texture("block"),
+                    };
+
+                    let obj = GameObject::new(pos, size, color, sprite);
+                    self.bricks.push(obj);
                 }
             }
         }

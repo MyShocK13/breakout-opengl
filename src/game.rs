@@ -73,8 +73,17 @@ impl Game {
 
         // load levels
         let mut one = GameLevel::new();
+        let mut two = GameLevel::new();
+        let mut three = GameLevel::new();
+        let mut four = GameLevel::new();
         one.load(RESOURCES.lock().unwrap(), "resources/levels/one.lvl", self.width, self.height / 2 );
+        two.load(RESOURCES.lock().unwrap(), "resources/levels/two.lvl", self.width, self.height / 2 );
+        three.load(RESOURCES.lock().unwrap(), "resources/levels/three.lvl", self.width, self.height / 2 );
+        four.load(RESOURCES.lock().unwrap(), "resources/levels/four.lvl", self.width, self.height / 2 );
         self.levels.push(one);
+        self.levels.push(two);
+        self.levels.push(three);
+        self.levels.push(four);
 
         let projection: Matrix4<f32> = ortho(0.0, self.width as f32, self.height as f32, 0.0, -1.0, 1.0);
 
