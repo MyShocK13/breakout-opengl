@@ -66,7 +66,7 @@ impl GameLevel {
                         _ => resources.get_texture("block"),
                     };
 
-                    let obj = GameObject::new(pos, size, color, sprite);
+                    let obj = GameObject::new(pos, size, vec2(0.0, 0.0), color, sprite);
                     self.bricks.push(obj);
                 }
             }

@@ -55,6 +55,10 @@ fn main() {
         // -----
         breakout.process_input(&window, delta_time);
 
+        // update game state
+        // -----------------
+        breakout.update(delta_time);
+
         // render
         // ------
         unsafe {

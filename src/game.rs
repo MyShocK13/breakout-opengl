@@ -109,7 +109,7 @@ impl Game {
             self.height as f32 - PLAYER_SIZE.y
         );
 
-        self.player = GameObject::new(player_pos, PLAYER_SIZE, vec3(1.0, 1.0 ,1.0), player_texture);
+        self.player = GameObject::new(player_pos, PLAYER_SIZE, vec2(0.0, 0.0), vec3(1.0, 1.0 ,1.0), player_texture);
 
         // Ball init
         //----------
@@ -120,9 +120,9 @@ impl Game {
         self.ball = Ball::new(ball_pos, BALL_RADIUS, INITIAL_BALL_VELOCITY, ball_texture);
     }
 
-    // pub fn update(dt: f32) {
-
-    // }
+    pub fn update(&mut self, dt: f32) {
+        self.ball.move_ball(dt, self.width);
+    }
 
     pub unsafe fn render(&self) {
         if self.state == GameState::GameActive {
@@ -143,12 +143,21 @@ impl Game {
             if window.get_key(Key::A) == Action::Press {
                 if self.player.position.x >= 0.0 {
                     self.player.position.x -= velocity;
+                    if self.ball.stuck {
+                        self.ball.game_object.position.x -= velocity;
+                    }
                 }
             }
             if window.get_key(Key::D) == Action::Press {
                 if self.player.position.x <= self.width as f32 - self.player.size.x {
                     self.player.position.x += velocity;
+                    if self.ball.stuck {
+                        self.ball.game_object.position.x += velocity;
+                    }
                 }
+            }
+            if window.get_key(Key::Space) == Action::Press {
+                self.ball.stuck = false;
             }
         }
     }
