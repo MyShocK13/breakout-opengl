@@ -122,6 +122,7 @@ impl Game {
 
     pub fn update(&mut self, dt: f32) {
         self.ball.move_ball(dt, self.width);
+        self.do_collisions();
     }
 
     pub unsafe fn render(&self) {
@@ -161,4 +162,26 @@ impl Game {
             }
         }
     }
+
+    pub fn do_collisions(&mut self) {
+        for brick in &mut self.levels[self.actual_level].bricks {
+            if !brick.destroyed {
+                if check_square_collision(&self.ball.game_object, &brick) {
+                    if !brick.is_solid {
+                        brick.destroyed = true;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// AABB - AABB collision
+fn check_square_collision(one: &GameObject, two: &GameObject) -> bool {
+    // collision x-axis?
+    let collision_x = one.position.x + one.size.x >= two.position.x && two.position.x + two.size.x >= one.position.x;
+    // collision y-axis?
+    let collision_y = one.position.y + one.size.y >= two.position.y && two.position.y + two.size.y >= one.position.y;
+    // collision only if on both axes
+    collision_x && collision_y
 }
