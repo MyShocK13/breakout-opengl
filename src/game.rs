@@ -1,9 +1,10 @@
+use std::cmp;
 use std::sync::Mutex;
 use std::ffi::CStr;
 
-use glfw::{ Key, Action };
+use glfw::{Key, Action};
 
-use cgmath::{ vec2, Vector2, vec3, Matrix4, ortho};
+use cgmath::{vec2, Vector2, vec3, Matrix4, ortho};
 
 use crate::ball::Ball;
 use crate::game_level::GameLevel;
@@ -166,7 +167,7 @@ impl Game {
     pub fn do_collisions(&mut self) {
         for brick in &mut self.levels[self.actual_level].bricks {
             if !brick.destroyed {
-                if check_square_collision(&self.ball.game_object, &brick) {
+                if check_circle_collision(&self.ball, &brick) {
                     if !brick.is_solid {
                         brick.destroyed = true;
                     }
@@ -177,11 +178,42 @@ impl Game {
 }
 
 // AABB - AABB collision
-fn check_square_collision(one: &GameObject, two: &GameObject) -> bool {
+fn _check_square_collision(one: &GameObject, two: &GameObject) -> bool {
     // collision x-axis?
     let collision_x = one.position.x + one.size.x >= two.position.x && two.position.x + two.size.x >= one.position.x;
     // collision y-axis?
     let collision_y = one.position.y + one.size.y >= two.position.y && two.position.y + two.size.y >= one.position.y;
     // collision only if on both axes
     collision_x && collision_y
+}
+
+// AABB - circle collision
+fn check_circle_collision(one: &Ball, two: &GameObject) -> bool {
+    // get center point circle first 
+    let center = vec2(one.game_object.position.x + one.radius, one.game_object.position.y + one.radius);
+    // calculate AABB info (center, half-extents)
+    let aabb_half_extents = vec2(two.size.x / 2.0, two.size.y / 2.0);
+    let aabb_center = vec2(
+        two.position.x + aabb_half_extents.x, 
+        two.position.y + aabb_half_extents.y
+    );
+    // get difference vector between both centers
+    let difference = center - aabb_center;
+    let clamped = vec2(
+        clamp(difference.x as i32, -aabb_half_extents.x as i32, aabb_half_extents.x as i32),
+        clamp(difference.y as i32, -aabb_half_extents.y as i32, aabb_half_extents.y as i32),    
+    );
+    // add clamped value to AABB_center and we get the value of box closest to circle
+    let closest = aabb_center + clamped;
+    // retrieve vector between center circle and closest point AABB and check if length <= radius
+    let difference = closest - center;
+    length(difference) < one.radius
+}
+
+fn clamp(value: i32, min: i32, max: i32) -> f32 {
+    cmp::max(min, cmp::min(max, value)) as f32
+}
+
+fn length(vector: Vector2<f32>) -> f32 {
+    (vector.x.powi(2) + vector.y.powi(2)).sqrt()
 }
