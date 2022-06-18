@@ -66,7 +66,8 @@ impl GameLevel {
                         _ => resources.get_texture("block"),
                     };
 
-                    let obj = GameObject::new(pos, size, vec2(0.0, 0.0), color, sprite);
+                    let mut obj = GameObject::new(pos, size, vec2(0.0, 0.0), color, sprite);
+                    obj.is_solid = *brick == 1;
                     self.bricks.push(obj);
                 }
             }
