@@ -148,8 +148,15 @@ impl Game {
     }
 
     pub fn update(&mut self, dt: f32) {
+        // update objects
         self.ball.move_ball(dt, self.width);
+        // check for collisions
         self.do_collisions();
+        // check loss condition
+        if self.ball.game_object.position.y >= self.height as f32 {
+            self.reset_level();
+            self.reset_player();
+        }
     }
 
     pub unsafe fn render(&self) {
@@ -188,6 +195,49 @@ impl Game {
                 self.ball.stuck = false;
             }
         }
+    }
+
+    pub fn reset_level(&mut self) {
+        match self.actual_level {
+            0 => {
+                let mut one = GameLevel::new();
+                one.load(RESOURCES.lock().unwrap(), "resources/levels/one.lvl", self.width, self.height / 2 );
+                self.levels[0] = one;
+            },
+            1 => {
+                let mut two = GameLevel::new();
+                two.load(RESOURCES.lock().unwrap(), "resources/levels/two.lvl", self.width, self.height / 2 );
+                self.levels[1] = two;
+            },
+            2 => {
+                let mut three = GameLevel::new();
+                three.load(RESOURCES.lock().unwrap(), "resources/levels/three.lvl", self.width, self.height / 2 );
+                self.levels[2] = three;
+            },
+            3 => {
+                let mut four = GameLevel::new();
+                four.load(RESOURCES.lock().unwrap(), "resources/levels/four.lvl", self.width, self.height / 2 );
+                self.levels[3] = four;
+            },
+            _ => ()
+        }
+    }
+
+    pub fn reset_player(&mut self) {
+        // reset player/ball stats
+        let player_pos = vec2(
+            self.width as f32 / 2.0 - PLAYER_SIZE.x / 2.0,
+            self.height as f32 - PLAYER_SIZE.y
+        );
+        let ball_pos = player_pos + vec2(
+            PLAYER_SIZE.x / 2.0 - BALL_RADIUS,
+            -BALL_RADIUS * 2.0
+        );
+        
+        self.player.size = PLAYER_SIZE;
+        self.player.position = player_pos;
+
+        self.ball.reset(ball_pos, INITIAL_BALL_VELOCITY);
     }
 
     pub fn do_collisions(&mut self) {

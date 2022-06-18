@@ -65,7 +65,7 @@ impl Ball {
         renderer.draw_sprite(&self.game_object.sprite, self.game_object.position, self.game_object.size, self.game_object.rotation, self.game_object.color);
     }
 
-    pub fn _reset(&mut self, position: Vector2<f32>, velocity: Vector2<f32>) {
+    pub fn reset(&mut self, position: Vector2<f32>, velocity: Vector2<f32>) {
         self.game_object.position = position;
         self.game_object.velocity = velocity;
         self.stuck = true;
