@@ -229,6 +229,23 @@ impl Game {
                 }
             }
         }
+
+        // check collisions for player pad (unless stuck)
+        let pad_collision: Collision = check_circle_collision(&self.ball, &self.player);
+        if !self.ball.stuck && pad_collision.0 {
+            // check where it hit the board, and change velocity based on where it hit the board
+            let center_board: f32 = self.player.position.x + self.player.size.x / 2.0;
+            let distance: f32 = (self.ball.game_object.position.x + self.ball.radius) - center_board;
+            let percentage: f32 = distance / (self.player.size.x / 2.0);
+            // then move accordingly
+            let strength = 2.0;
+            let old_velocity = self.ball.game_object.velocity;
+            self.ball.game_object.velocity.x = INITIAL_BALL_VELOCITY.x * percentage * strength; 
+            //self.ball.game_object.velocity.y = -self.ball.game_object.velocity.y;
+            self.ball.game_object.velocity = self.ball.game_object.velocity.normalize() * length(old_velocity); // keep speed consistent over both axes (multiply by length of old velocity, so total strength is not changed)
+            // fix sticky paddle
+            self.ball.game_object.velocity.y = -1.0 * self.ball.game_object.velocity.y.abs();
+        }
     }
 }
 
