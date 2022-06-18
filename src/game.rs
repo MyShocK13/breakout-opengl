@@ -4,7 +4,8 @@ use std::ffi::CStr;
 
 use glfw::{Key, Action};
 
-use cgmath::{vec2, Vector2, vec3, Matrix4, ortho};
+use cgmath::{vec2, Vector2, vec3, Matrix4, ortho, dot};
+use cgmath::prelude::*;
 
 use crate::ball::Ball;
 use crate::game_level::GameLevel;
@@ -13,12 +14,37 @@ use crate::lib::shader::Shader;
 use crate::lib::sprite_renderer::SpriteRenderer;
 use crate::resource_manager::ResourceManager;
 
+// Represents the current state of the game
 #[derive(PartialEq)]
 pub enum GameState {
     GameActive,
     // GameMenu,
     // GameWin
 }
+
+// Represents the four possible (collision) directions
+#[derive(PartialEq)]
+enum Direction {
+    Up,
+    Right,
+    Down,
+    Left,
+    None
+}
+
+impl Direction {
+    fn from_i8(value: i8) -> Direction {
+        match value {
+            0 => Direction::Up,
+            1 => Direction::Right,
+            2 => Direction::Down,
+            3 => Direction::Left,
+            _ => Direction::None
+        }
+    }
+}
+
+type Collision = (bool, Direction, Vector2<f32>);
 
 static mut RENDERER: SpriteRenderer = SpriteRenderer {
     shader: Shader { id: 0 },
@@ -167,9 +193,38 @@ impl Game {
     pub fn do_collisions(&mut self) {
         for brick in &mut self.levels[self.actual_level].bricks {
             if !brick.destroyed {
-                if check_circle_collision(&self.ball, &brick) {
+                let collision: Collision = check_circle_collision(&self.ball, &brick);
+
+                if collision.0 { // if collision is true
+                    // destroy block if not solid
                     if !brick.is_solid {
                         brick.destroyed = true;
+                    }
+                    // collision resolution
+                    let dir = collision.1;
+                    let diff_vector = collision.2;
+                    let mut penetration = 0.0;
+
+                    match dir {
+                        Direction::Left | Direction::Right => {
+                            self.ball.game_object.velocity.x = -self.ball.game_object.velocity.x; // reverse horizontal velocity
+                            // relocate
+                            penetration = self.ball.radius - diff_vector.x.abs();
+                        },
+                        Direction::Up | Direction::Down => {
+                            self.ball.game_object.velocity.y = -self.ball.game_object.velocity.y; // reverse vertical velocity
+                            // relocate
+                            penetration = self.ball.radius - diff_vector.y.abs();
+                        },
+                        _ => ()
+                    }
+
+                    match dir {
+                        Direction::Left => self.ball.game_object.position.x += penetration, // move ball to right
+                        Direction::Right => self.ball.game_object.position.x -= penetration, // move ball to left
+                        Direction::Up => self.ball.game_object.position.y += penetration, // move ball back up
+                        Direction::Down => self.ball.game_object.position.y -= penetration, // move ball back down
+                        _ => ()
                     }
                 }
             }
@@ -188,7 +243,7 @@ fn _check_square_collision(one: &GameObject, two: &GameObject) -> bool {
 }
 
 // AABB - circle collision
-fn check_circle_collision(one: &Ball, two: &GameObject) -> bool {
+fn check_circle_collision(one: &Ball, two: &GameObject) -> Collision {
     // get center point circle first 
     let center = vec2(one.game_object.position.x + one.radius, one.game_object.position.y + one.radius);
     // calculate AABB info (center, half-extents)
@@ -207,7 +262,12 @@ fn check_circle_collision(one: &Ball, two: &GameObject) -> bool {
     let closest = aabb_center + clamped;
     // retrieve vector between center circle and closest point AABB and check if length <= radius
     let difference = closest - center;
-    length(difference) < one.radius
+
+    if length(difference) <= one.radius {
+        (true, vector_direction(difference), difference)
+    } else {
+        (false, Direction::Up, vec2(0.0, 0.0))
+    }
 }
 
 fn clamp(value: i32, min: i32, max: i32) -> f32 {
@@ -216,4 +276,26 @@ fn clamp(value: i32, min: i32, max: i32) -> f32 {
 
 fn length(vector: Vector2<f32>) -> f32 {
     (vector.x.powi(2) + vector.y.powi(2)).sqrt()
+}
+
+fn vector_direction(target: Vector2<f32>) -> Direction {
+    let compass = vec![
+        vec2(0.0, 1.0), // up
+        vec2(1.0, 0.0), // right
+        vec2(0.0, -1.0), // down
+        vec2(-1.0, 0.0), // left
+    ];
+
+    let mut max = 0.0;
+    let mut best_match: i8 = -1;
+    
+    for (i, _dir) in compass.iter().enumerate() {
+        let dot_product = dot(target.normalize(), compass[i]);
+        if dot_product > max {
+            max = dot_product;
+            best_match = i as i8;
+        }
+    };
+
+    Direction::from_i8(best_match)
 }
