@@ -12,6 +12,7 @@ use crate::game_level::GameLevel;
 use crate::game_object::GameObject;
 use crate::lib::shader::Shader;
 use crate::lib::sprite_renderer::SpriteRenderer;
+use crate::particle::ParticleGenerator;
 use crate::resource_manager::ResourceManager;
 
 // Represents the current state of the game
@@ -51,6 +52,8 @@ static mut RENDERER: SpriteRenderer = SpriteRenderer {
     quad_vao: 0
 };
 
+static mut PARTICLE_GENERATOR: ParticleGenerator = ParticleGenerator::new_empty();
+
 lazy_static! {
     static ref RESOURCES: Mutex<ResourceManager<'static>> = Mutex::new(ResourceManager::new());
     // static ref PLAYER: Mutex<GameObject> = Mutex::new(GameObject::new_empty());
@@ -73,6 +76,7 @@ pub struct Game {
     pub ball: Ball,
     pub levels: Vec<GameLevel>,
     pub actual_level: usize,
+    // particle_generator: ParticleGenerator,
 }
 
 impl Game {
@@ -92,11 +96,26 @@ impl Game {
 
     pub unsafe fn init(&mut self) {
         // load shaders
-        let shader = RESOURCES.lock().unwrap().load_shader(
-            "resources/shaders/vertexShader.glsl",
-            "resources/shaders/fragmentShader.glsl",
-            "main"
+        let sprite_shader = RESOURCES.lock().unwrap().load_shader(
+            "resources/shaders/sprite_vs.glsl",
+            "resources/shaders/sprite_fs.glsl",
+            "sprite"
         );
+        let particle_shader = RESOURCES.lock().unwrap().load_shader(
+            "resources/shaders/particle_vs.glsl",
+            "resources/shaders/particle_fs.glsl",
+            "particle"
+        );
+
+        // configure shaders
+        let projection: Matrix4<f32> = ortho(0.0, self.width as f32, self.height as f32, 0.0, -1.0, 1.0);
+        sprite_shader.use_program();
+        // let text = CStr::from_bytes_with_nul_unchecked(concat!("image", "\0").as_bytes());
+        // sprite_shader.setInt(text, 0);
+        let text = CStr::from_bytes_with_nul_unchecked(concat!("projection", "\0").as_bytes());
+        sprite_shader.set_mat4(text, &projection);
+        particle_shader.use_program();
+        particle_shader.set_mat4(text, &projection);
 
         // load textures
         RESOURCES.lock().unwrap().load_texture("resources/textures/background.jpg", false, "background");
@@ -104,6 +123,7 @@ impl Game {
         RESOURCES.lock().unwrap().load_texture("resources/textures/block.png", false, "block");
         RESOURCES.lock().unwrap().load_texture("resources/textures/block_solid.png", false, "block_solid");
         let player_texture = RESOURCES.lock().unwrap().load_texture("resources/textures/paddle.png", true, "paddle");
+        let particle_texture = RESOURCES.lock().unwrap().load_texture("resources/textures/particle.png", true, "particle");
 
         // load levels
         let mut one = GameLevel::new();
@@ -119,27 +139,18 @@ impl Game {
         self.levels.push(three);
         self.levels.push(four);
 
-        let projection: Matrix4<f32> = ortho(0.0, self.width as f32, self.height as f32, 0.0, -1.0, 1.0);
-
-        shader.use_program();
-        // let text = CStr::from_bytes_with_nul_unchecked(concat!("image", "\0").as_bytes());
-        // shader.setInt(text, 0);
-        let text = CStr::from_bytes_with_nul_unchecked(concat!("projection", "\0").as_bytes());
-        shader.set_mat4(text, &projection);
-
-        RENDERER = SpriteRenderer::new(shader);
+        // set render-specific controls
+        RENDERER = SpriteRenderer::new(sprite_shader);
+        PARTICLE_GENERATOR = ParticleGenerator::new(particle_shader, particle_texture, 1);
 
         // Player initialization
-        //----------------------
         let player_pos = vec2(
             self.width as f32 / 2.0 - PLAYER_SIZE.x / 2.0,
             self.height as f32 - PLAYER_SIZE.y
         );
-
         self.player = GameObject::new(player_pos, PLAYER_SIZE, vec2(0.0, 0.0), vec3(1.0, 1.0 ,1.0), player_texture);
 
-        // Ball init
-        //----------
+        // Ball initialization
         let ball_pos = player_pos + vec2(
             PLAYER_SIZE.x / 2.0 - BALL_RADIUS,
             -BALL_RADIUS * 2.0
@@ -166,9 +177,13 @@ impl Game {
             RENDERER.draw_sprite(&background_tex, vec2(0.0, 0.0), vec2(self.width as f32, self.height as f32), 0.0, vec3(1.0, 1.0, 1.0));
             // Draw level
             self.levels[self.actual_level].draw(&RENDERER);
+            // draw player
+            self.player.draw(&RENDERER);
+            // draw particles	
+            PARTICLE_GENERATOR.draw();
+            // draw ball
+            self.ball.draw(&RENDERER);
         }
-        self.player.draw(&RENDERER);
-        self.ball.draw(&RENDERER);
     }
 
     pub fn process_input(&mut self, window: &glfw::Window, dt: f32) {

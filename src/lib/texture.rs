@@ -17,8 +17,24 @@ pub struct Texture2D {
     pub filter_max: u32, // filtering mode if texture pixels > screen pixels
 }
 
-impl Default for Texture2D {
-    fn default() -> Self {
+impl Texture2D {
+    pub const fn new_empty() -> Self {
+        let texture = Texture2D {
+            id: 0,
+            width: 0,
+            height: 0,
+            internal_format: gl::RGB,
+            image_format: gl::RGB,
+            wrap_s: gl::REPEAT,
+            wrap_t: gl::REPEAT,
+            filter_min: gl::LINEAR,
+            filter_max: gl::LINEAR,
+        };
+
+        texture
+    }
+
+    pub fn new() -> Self {
         let mut texture = Texture2D {
             id: 0,
             width: 0,
@@ -37,9 +53,7 @@ impl Default for Texture2D {
 
         texture
     }
-}
 
-impl Texture2D {
     /// generates texture from image data
     pub unsafe fn generate(&mut self, width: u32, height: u32, data: Vec<u8>) {
         self.width = width;

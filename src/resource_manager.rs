@@ -38,7 +38,7 @@ impl<'a> ResourceManager<'a> {
         let img = image::open(&Path::new(path)).expect("Failed to load texture");
         let data = img.clone().into_bytes();
         
-        let mut texture = Texture2D::default();
+        let mut texture = Texture2D::new();
 
         if alpha {
             texture.internal_format = gl::RGBA;

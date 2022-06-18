@@ -26,7 +26,7 @@ impl GameObject {
             rotation: 0.0,
             is_solid: false,
             destroyed: false,
-            sprite: Texture2D::default(),
+            sprite: Texture2D::new(),
         };
 
         game_object

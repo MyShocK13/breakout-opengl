@@ -11,6 +11,7 @@ mod game;
 use game::Game;
 mod game_level;
 mod game_object;
+mod particle;
 mod resource_manager;
 mod lib {
     pub mod shader;

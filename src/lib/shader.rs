@@ -1,14 +1,13 @@
-use gl;
-use self::gl::types::*;
-
-use cgmath::{ Matrix, Matrix4, Vector3 };
-use cgmath::prelude::*;
-
-use std::ffi::{ CString, CStr };
+use std::ffi::{CString, CStr};
 use std::fs::File;
 use std::io::Read;
 use std::ptr;
 use std::str;
+
+use gl;
+use self::gl::types::*;
+use cgmath::{Matrix, Matrix4, Vector2, Vector3, Vector4};
+use cgmath::prelude::*;
 
 #[derive(Copy, Clone)]
 pub struct Shader {
@@ -75,8 +74,16 @@ impl Shader {
         gl::Uniform1i(gl::GetUniformLocation(self.id, name.as_ptr()), value);
     }
     /// ------------------------------------------------------------------------
+    pub unsafe fn set_vector2(&self, name: &CStr, value: &Vector2<f32>) {
+        gl::Uniform2fv(gl::GetUniformLocation(self.id, name.as_ptr()), 1, value.as_ptr());
+    }
+    /// ------------------------------------------------------------------------
     pub unsafe fn set_vector3(&self, name: &CStr, value: &Vector3<f32>) {
         gl::Uniform3fv(gl::GetUniformLocation(self.id, name.as_ptr()), 1, value.as_ptr());
+    }
+    /// ------------------------------------------------------------------------
+    pub unsafe fn set_vector4(&self, name: &CStr, value: &Vector4<f32>) {
+        gl::Uniform4fv(gl::GetUniformLocation(self.id, name.as_ptr()), 1, value.as_ptr());
     }
     /// ------------------------------------------------------------------------
     pub unsafe fn set_mat4(&self, name: &CStr, mat: &Matrix4<f32>) {
