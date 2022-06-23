@@ -182,9 +182,9 @@ impl ParticleGenerator {
     fn respawn_particle(&mut self, index: usize, object: &GameObject, offset: Vector2<f32>) {
         let mut rng = rand::thread_rng();
         let random: f32 = ((rng.gen::<f32>() % 100.0) - 50.0) / 10.0;
-        let rColor: f32 = 0.5 + ((rng.gen::<f32>() % 100.0) / 100.0);
+        let r_color: f32 = 0.5 + ((rng.gen::<f32>() % 100.0) / 100.0);
         self.particles[index].position = vec2(object.position.x + random + offset.x, object.position.y + random + offset.y);
-        self.particles[index].color = vec4(rColor, rColor, rColor, 1.0);
+        self.particles[index].color = vec4(r_color, r_color, r_color, 1.0);
         self.particles[index].life = 1.0;
         self.particles[index].velocity = object.velocity * 0.1;
     }
