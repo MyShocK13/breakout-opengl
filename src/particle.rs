@@ -6,9 +6,14 @@ use std::ptr;
 use cgmath::{ vec2, vec4, Vector2, Vector4 };
 use gl;
 use self::gl::types::*;
+use rand::prelude::*;
 
+use crate::game_object::GameObject;
 use crate::lib::shader::Shader;
 use crate::lib::texture::Texture2D;
+
+// stores the index of the last particle used (for quick access to next dead particle)
+static mut LAST_USED_PARTICLE: u32 = 0;
 
 // Represents a single particle and its state
 struct Particle {
@@ -24,7 +29,7 @@ impl Particle {
             position: vec2(0.0, 0.0),
             velocity: vec2(0.0, 0.0),
             color: vec4(1.0, 1.0, 1.0, 1.0),
-            life: 5.0,
+            life: 0.0,
         };
 
         particle
@@ -87,6 +92,27 @@ impl ParticleGenerator {
         gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
     }
 
+    pub fn update(&mut self, dt: f32, object: &GameObject, new_particles: u32, offset: Vector2<f32>) {
+        // add new particles 
+        for _i in 0..new_particles {
+            let unused_particle = unsafe { 
+                self.first_unused_particle() 
+            };
+
+            self.respawn_particle(unused_particle as usize, object, offset);
+        }
+        // update all particles
+        for i in 0..self.amount {
+            let i = i as usize;
+            self.particles[i].life -= dt; // reduce life
+            if self.particles[i].life > 0.0 {	// particle is alive, thus update
+                let new_velocity = self.particles[i].velocity * dt;
+                self.particles[i].position -= new_velocity; 
+                self.particles[i].color.w -= dt * 2.5;
+            }
+        }
+    }
+
     // initializes buffer and vertex attributes
     fn init(&mut self) {
         // set up mesh and attribute properties
@@ -128,5 +154,38 @@ impl ParticleGenerator {
         for _i in 0..self.amount {
             self.particles.push(Particle::new_empty());
         }
+    }
+
+    // returns the first Particle index that's currently unused e.g. life <= 0.0 or 0 if no particle is currently inactive
+    unsafe fn first_unused_particle(&self) -> u32 {
+        // first search from last used particle, this will usually return almost instantly
+        for i in LAST_USED_PARTICLE..self.amount {
+            if self.particles[i as usize].life <= 0.0 {
+                LAST_USED_PARTICLE = i;
+                return i
+            }
+        }
+
+        // otherwise, do a linear search
+        for i in 0..self.amount {
+            if self.particles[i as usize].life <= 0.0 {
+                LAST_USED_PARTICLE = i;
+                return i
+            }
+        }
+
+        // all particles are taken, override the first one (note that if it repeatedly hits this case, more particles should be reserved)
+        LAST_USED_PARTICLE = 0;
+        return 0    
+    }
+
+    fn respawn_particle(&mut self, index: usize, object: &GameObject, offset: Vector2<f32>) {
+        let mut rng = rand::thread_rng();
+        let random: f32 = ((rng.gen::<f32>() % 100.0) - 50.0) / 10.0;
+        let rColor: f32 = 0.5 + ((rng.gen::<f32>() % 100.0) / 100.0);
+        self.particles[index].position = vec2(object.position.x + random + offset.x, object.position.y + random + offset.y);
+        self.particles[index].color = vec4(rColor, rColor, rColor, 1.0);
+        self.particles[index].life = 1.0;
+        self.particles[index].velocity = object.velocity * 0.1;
     }
 }

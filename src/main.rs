@@ -1,5 +1,5 @@
 extern crate glfw;
-use self::glfw::{ Context };
+use self::glfw::{Context};
 
 #[macro_use]
 extern crate lazy_static;

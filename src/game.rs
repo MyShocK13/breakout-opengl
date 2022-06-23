@@ -141,7 +141,7 @@ impl Game {
 
         // set render-specific controls
         RENDERER = SpriteRenderer::new(sprite_shader);
-        PARTICLE_GENERATOR = ParticleGenerator::new(particle_shader, particle_texture, 1);
+        PARTICLE_GENERATOR = ParticleGenerator::new(particle_shader, particle_texture, 500);
 
         // Player initialization
         let player_pos = vec2(
@@ -163,6 +163,15 @@ impl Game {
         self.ball.move_ball(dt, self.width);
         // check for collisions
         self.do_collisions();
+        // update particles
+        unsafe {
+            PARTICLE_GENERATOR.update(
+                dt,
+                &self.ball.game_object, 
+                2,
+                vec2(self.ball.radius / 2.0, self.ball.radius / 2.0)
+            );
+        }
         // check loss condition
         if self.ball.game_object.position.y >= self.height as f32 {
             self.reset_level();
