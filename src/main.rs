@@ -4,8 +4,6 @@ use self::glfw::{Context};
 #[macro_use]
 extern crate lazy_static;
 
-use gl;
-
 mod ball;
 mod game;
 use game::Game;
@@ -14,6 +12,7 @@ mod game_object;
 mod particle;
 mod resource_manager;
 mod lib {
+    pub mod post_processor;
     pub mod shader;
     pub mod sprite_renderer;
     pub mod texture;
@@ -63,10 +62,7 @@ fn main() {
         // render
         // ------
         unsafe {
-            gl::ClearColor(0.0, 0.0, 0.0, 1.0);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
-
-            breakout.render();
+            breakout.render(current_frame);
         }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)

@@ -1,4 +1,5 @@
 use std::os::raw::c_void;
+use std::ptr;
 
 #[derive(Copy, Clone)]
 pub struct Texture2D {
@@ -70,6 +71,33 @@ impl Texture2D {
                     self.image_format,
                     gl::UNSIGNED_BYTE,
                     &data[0] as *const u8 as *const c_void);
+        // set Texture wrap and filter modes
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, self.wrap_s as i32);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, self.wrap_t as i32);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, self.filter_min as i32);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, self.filter_max as i32);
+
+        gl::GenerateMipmap(gl::TEXTURE_2D);
+        
+        // unbind texture
+        gl::BindTexture(gl::TEXTURE_2D, 0);
+    }
+
+    pub unsafe fn generate_raw(&mut self, width: u32, height: u32) {
+        self.width = width;
+        self.height = height;
+        
+        // create Texture
+        gl::BindTexture(gl::TEXTURE_2D, self.id);
+        gl::TexImage2D(gl::TEXTURE_2D,
+                        0,
+                        self.internal_format as i32,
+                        width as i32,
+                        height as i32,
+                        0,
+                        self.image_format,
+                        gl::UNSIGNED_BYTE,
+                        ptr::null());
         // set Texture wrap and filter modes
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, self.wrap_s as i32);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, self.wrap_t as i32);

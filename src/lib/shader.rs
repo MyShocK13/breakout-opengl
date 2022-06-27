@@ -70,12 +70,16 @@ impl Shader {
 
     /// utility uniform functions
     /// ------------------------------------------------------------------------
-    pub unsafe fn _set_int(&self, name: &CStr, value: i32) {
-        gl::Uniform1i(gl::GetUniformLocation(self.id, name.as_ptr()), value);
+    pub unsafe fn set_int(&self, name: &str, value: i32) {
+        let name_format = format!("{}{}", name, "\0");
+        let text = CStr::from_bytes_with_nul_unchecked(name_format.as_bytes());
+        gl::Uniform1i(gl::GetUniformLocation(self.id, text.as_ptr()), value);
     }
     /// ------------------------------------------------------------------------
-    pub unsafe fn set_vector2(&self, name: &CStr, value: &Vector2<f32>) {
-        gl::Uniform2fv(gl::GetUniformLocation(self.id, name.as_ptr()), 1, value.as_ptr());
+    pub unsafe fn set_vector2(&self, name: &str, value: &Vector2<f32>) {
+        let name_format = format!("{}{}", name, "\0");
+        let text = CStr::from_bytes_with_nul_unchecked(name_format.as_bytes());
+        gl::Uniform2fv(gl::GetUniformLocation(self.id, text.as_ptr()), 1, value.as_ptr());
     }
     /// ------------------------------------------------------------------------
     pub unsafe fn set_vector3(&self, name: &CStr, value: &Vector3<f32>) {
@@ -117,6 +121,4 @@ impl Shader {
             }
         }
     }
-
-
 }

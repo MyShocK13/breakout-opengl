@@ -10,6 +10,7 @@ use cgmath::prelude::*;
 use crate::ball::Ball;
 use crate::game_level::GameLevel;
 use crate::game_object::GameObject;
+use crate::lib::post_processor::PostProcessor;
 use crate::lib::shader::Shader;
 use crate::lib::sprite_renderer::SpriteRenderer;
 use crate::particle::ParticleGenerator;
@@ -51,6 +52,7 @@ static mut RENDERER: SpriteRenderer = SpriteRenderer {
     shader: Shader { id: 0 },
     quad_vao: 0
 };
+static mut POST_PROCESSOR: PostProcessor = PostProcessor::new_empty();
 
 static mut PARTICLE_GENERATOR: ParticleGenerator = ParticleGenerator::new_empty();
 
@@ -106,6 +108,11 @@ impl Game {
             "resources/shaders/particle_fs.glsl",
             "particle"
         );
+        let effects_shader = RESOURCES.lock().unwrap().load_shader(
+            "resources/shaders/effects_vs.glsl",
+            "resources/shaders/effects_fs.glsl",
+            "particle"
+        );
 
         // configure shaders
         let projection: Matrix4<f32> = ortho(0.0, self.width as f32, self.height as f32, 0.0, -1.0, 1.0);
@@ -142,6 +149,7 @@ impl Game {
         // set render-specific controls
         RENDERER = SpriteRenderer::new(sprite_shader);
         PARTICLE_GENERATOR = ParticleGenerator::new(particle_shader, particle_texture, 500);
+        POST_PROCESSOR = PostProcessor::new(effects_shader, self.width as i32, self.height as i32);
 
         // Player initialization
         let player_pos = vec2(
@@ -179,8 +187,11 @@ impl Game {
         }
     }
 
-    pub unsafe fn render(&self) {
+    pub unsafe fn render(&self, time: f32) {
         if self.state == GameState::GameActive {
+            // begin rendering to postprocessing framebuffer
+            POST_PROCESSOR.begin_render();
+
             // Draw background
             let background_tex = RESOURCES.lock().unwrap().get_texture("background");
             RENDERER.draw_sprite(&background_tex, vec2(0.0, 0.0), vec2(self.width as f32, self.height as f32), 0.0, vec3(1.0, 1.0, 1.0));
@@ -192,6 +203,11 @@ impl Game {
             PARTICLE_GENERATOR.draw();
             // draw ball
             self.ball.draw(&RENDERER);
+
+            // end rendering to postprocessing framebuffer
+            POST_PROCESSOR.end_render();
+            // render postprocessing quad
+            POST_PROCESSOR.render(time);
         }
     }
 

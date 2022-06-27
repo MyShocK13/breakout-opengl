@@ -78,8 +78,7 @@ impl ParticleGenerator {
         self.shader.use_program();
         for particle in &self.particles {
             if particle.life > 0.0 {
-                let text = CStr::from_bytes_with_nul_unchecked(concat!("offset", "\0").as_bytes());
-                self.shader.set_vector2(text, &particle.position);
+                self.shader.set_vector2("offset", &particle.position);
                 let text = CStr::from_bytes_with_nul_unchecked(concat!("color", "\0").as_bytes());
                 self.shader.set_vector4(text, &particle.color);
                 self.texture.bind();
