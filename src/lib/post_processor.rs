@@ -1,3 +1,5 @@
+use cgmath::vec2;
+use cgmath::Vector2;
 use std::mem;
 use std::os::raw::c_void;
 use std::ptr;
@@ -88,29 +90,18 @@ impl PostProcessor {
         post_processor.post_processing_shader.use_program();
         post_processor.post_processing_shader.upload_uniform_int("scene", 0);
         let offset: f32 = 1.0 / 300.0;
-        // let offsets: [[f32; 2]; 9] = [
-        //     [ -offset,  offset  ],  // top-left
-        //     [  0.0,     offset  ],  // top-center
-        //     [  offset,  offset  ],  // top-right
-        //     [ -offset,  0.0     ],  // center-left
-        //     [  0.0,     0.0     ],  // center-center
-        //     [  offset,  0.0     ],  // center - right
-        //     [ -offset, -offset  ],  // bottom-left
-        //     [  0.0,    -offset  ],  // bottom-center
-        //     [  offset, -offset  ]   // bottom-right    
-        // ];
-        let offsets: [f32; 18] = [
-             -offset,  offset  ,  // top-left
-              0.0,     offset  ,  // top-center
-              offset,  offset  ,  // top-right
-             -offset,  0.0     ,  // center-left
-              0.0,     0.0     ,  // center-center
-              offset,  0.0     ,  // center - right
-             -offset, -offset  ,  // bottom-left
-              0.0,    -offset  ,  // bottom-center
-              offset, -offset     // bottom-right    
+        let offsets: [Vector2<f32>; 9] = [
+            vec2( -offset,  offset  ),  // top-left
+            vec2(  0.0,     offset  ),  // top-center
+            vec2(  offset,  offset  ),  // top-right
+            vec2( -offset,  0.0     ),  // center-left
+            vec2(  0.0,     0.0     ),  // center-center
+            vec2(  offset,  0.0     ),  // center - right
+            vec2( -offset, -offset  ),  // bottom-left
+            vec2(  0.0,    -offset  ),  // bottom-center
+            vec2(  offset, -offset  )   // bottom-right    
         ];
-        post_processor.post_processing_shader.upload_uniform_float_array("offsets", &offsets, 18);
+        post_processor.post_processing_shader.upload_uniform_float_vec2("offsets", &offsets[0], 9);
         
         let edge_kernel: [i32; 9] = [
             -1, -1, -1,

@@ -94,10 +94,10 @@ impl Shader {
         gl::Uniform1fv(location, count, values.as_ptr());
     }
     /// ------------------------------------------------------------------------
-    pub unsafe fn upload_uniform_float_vec2(&self, name: &str, value: &Vector2<f32>) {
+    pub unsafe fn upload_uniform_float_vec2(&self, name: &str, value: &Vector2<f32>, count: i32) {
         let name_format = format!("{}{}", name, "\0");
         let text = CStr::from_bytes_with_nul_unchecked(name_format.as_bytes());
-        gl::Uniform2fv(gl::GetUniformLocation(self.id, text.as_ptr()), 1, value.as_ptr());
+        gl::Uniform2fv(gl::GetUniformLocation(self.id, text.as_ptr()), count, value.as_ptr());
     }
     /// ------------------------------------------------------------------------
     pub unsafe fn set_vector3(&self, name: &CStr, value: &Vector3<f32>) {
