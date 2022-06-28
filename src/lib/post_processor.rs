@@ -1,12 +1,9 @@
-use std::ffi::CStr;
 use std::mem;
 use std::os::raw::c_void;
 use std::ptr;
 
 use gl;
 use self::gl::types::*;
-use cgmath::{ vec3, Vector2, Vector3, Matrix4, Rad };
-use cgmath::prelude::*;
 
 use crate::lib::shader::Shader;
 use crate::lib::texture::Texture2D; 
@@ -62,7 +59,6 @@ impl PostProcessor {
             vao: 0,
         };
 
-
         // initialize renderbuffer/framebuffer object
         gl::GenFramebuffers(1, &mut post_processor.msfbo);
         gl::GenFramebuffers(1, &mut post_processor.fbo);
@@ -90,32 +86,45 @@ impl PostProcessor {
         // initialize render data and uniforms
         post_processor.init_render_data();
         post_processor.post_processing_shader.use_program();
-        post_processor.post_processing_shader.set_int("scene", 0);
+        post_processor.post_processing_shader.upload_uniform_int("scene", 0);
         let offset: f32 = 1.0 / 300.0;
-        let vertices: [[f32; 2]; 9] = [
-            [ -offset,  offset  ],  // top-left
-            [  0.0,     offset  ],  // top-center
-            [  offset,  offset  ],  // top-right
-            [ -offset,  0.0     ],  // center-left
-            [  0.0,     0.0     ],  // center-center
-            [  offset,  0.0     ],  // center - right
-            [ -offset, -offset  ],  // bottom-left
-            [  0.0,    -offset  ],  // bottom-center
-            [  offset, -offset  ]   // bottom-right    
+        // let offsets: [[f32; 2]; 9] = [
+        //     [ -offset,  offset  ],  // top-left
+        //     [  0.0,     offset  ],  // top-center
+        //     [  offset,  offset  ],  // top-right
+        //     [ -offset,  0.0     ],  // center-left
+        //     [  0.0,     0.0     ],  // center-center
+        //     [  offset,  0.0     ],  // center - right
+        //     [ -offset, -offset  ],  // bottom-left
+        //     [  0.0,    -offset  ],  // bottom-center
+        //     [  offset, -offset  ]   // bottom-right    
+        // ];
+        let offsets: [f32; 18] = [
+             -offset,  offset  ,  // top-left
+              0.0,     offset  ,  // top-center
+              offset,  offset  ,  // top-right
+             -offset,  0.0     ,  // center-left
+              0.0,     0.0     ,  // center-center
+              offset,  0.0     ,  // center - right
+             -offset, -offset  ,  // bottom-left
+              0.0,    -offset  ,  // bottom-center
+              offset, -offset     // bottom-right    
         ];
-        // glUniform2fv(glGetUniformLocation(this->PostProcessingShader.ID, "offsets"), 9, (float*)offsets);
-        // int edge_kernel[9] = {
-        //     -1, -1, -1,
-        //     -1,  8, -1,
-        //     -1, -1, -1
-        // };
-        // glUniform1iv(glGetUniformLocation(this->PostProcessingShader.ID, "edge_kernel"), 9, edge_kernel);
-        // float blur_kernel[9] = {
-        //     1.0f / 16.0f, 2.0f / 16.0f, 1.0f / 16.0f,
-        //     2.0f / 16.0f, 4.0f / 16.0f, 2.0f / 16.0f,
-        //     1.0f / 16.0f, 2.0f / 16.0f, 1.0f / 16.0f
-        // };
-        // glUniform1fv(glGetUniformLocation(this->PostProcessingShader.ID, "blur_kernel"), 9, blur_kernel); 
+        post_processor.post_processing_shader.upload_uniform_float_array("offsets", &offsets, 18);
+        
+        let edge_kernel: [i32; 9] = [
+            -1, -1, -1,
+            -1,  8, -1,
+            -1, -1, -1
+        ];
+        post_processor.post_processing_shader.upload_uniform_int_array("edge_kernel", &edge_kernel, 9);
+        
+        let blur_kernel: [f32; 9] = [
+            1.0 / 16.0, 2.0 / 16.0, 1.0 / 16.0,
+            2.0 / 16.0, 4.0 / 16.0, 2.0 / 16.0,
+            1.0 / 16.0, 2.0 / 16.0, 1.0 / 16.0
+        ];
+        post_processor.post_processing_shader.upload_uniform_float_array("blur_kernel", &blur_kernel, 9);
 
         post_processor
     }
@@ -137,10 +146,10 @@ impl PostProcessor {
     pub unsafe fn render(&self, time: f32) {
         // // set uniforms/options
         self.post_processing_shader.use_program();
-        // self.post_processing_shader.SetFloat("time", time);
-        // self.post_processing_shader.SetInteger("confuse", self.Confuse);
-        // self.post_processing_shader.SetInteger("chaos", self.Chaos);
-        // self.post_processing_shader.SetInteger("shake", self.Shake);
+        self.post_processing_shader.upload_uniform_float("time", time);
+        self.post_processing_shader.upload_uniform_int("confuse", self.confuse as i32);
+        self.post_processing_shader.upload_uniform_int("chaos", self.chaos as i32);
+        self.post_processing_shader.upload_uniform_int("shake", self.shake as i32);
 
         // render textured quad
         gl::ActiveTexture(gl::TEXTURE0);

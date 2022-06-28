@@ -53,7 +53,6 @@ static mut RENDERER: SpriteRenderer = SpriteRenderer {
     quad_vao: 0
 };
 static mut POST_PROCESSOR: PostProcessor = PostProcessor::new_empty();
-
 static mut PARTICLE_GENERATOR: ParticleGenerator = ParticleGenerator::new_empty();
 
 lazy_static! {
@@ -78,7 +77,7 @@ pub struct Game {
     pub ball: Ball,
     pub levels: Vec<GameLevel>,
     pub actual_level: usize,
-    // particle_generator: ParticleGenerator,
+    shake_time: f32
 }
 
 impl Game {
@@ -90,7 +89,8 @@ impl Game {
             player: GameObject::new_empty(),
             ball: Ball::new_empty(),
             levels: Vec::new(),
-            actual_level: 0
+            actual_level: 0,
+            shake_time: 0.0
         };
 
         game
@@ -179,6 +179,14 @@ impl Game {
                 2,
                 vec2(self.ball.radius / 2.0, self.ball.radius / 2.0)
             );
+        }
+        if self.shake_time > 0.0 {
+            self.shake_time -= dt;
+            if self.shake_time <= 0.0 {
+                unsafe {
+                    POST_PROCESSOR.shake = false;
+                }
+            }
         }
         // check loss condition
         if self.ball.game_object.position.y >= self.height as f32 {
@@ -289,6 +297,11 @@ impl Game {
                     // destroy block if not solid
                     if !brick.is_solid {
                         brick.destroyed = true;
+                    } else { // if block is solid, enable shake effect
+                        self.shake_time = 0.05;
+                        unsafe {
+                            POST_PROCESSOR.shake = true;
+                        }
                     }
                     // collision resolution
                     let dir = collision.1;
