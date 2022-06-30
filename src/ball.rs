@@ -6,7 +6,6 @@ use crate::lib::texture::Texture2D;
 
 pub struct Ball {
     pub game_object: GameObject,
-
     pub radius: f32,
     pub stuck: bool,
 }

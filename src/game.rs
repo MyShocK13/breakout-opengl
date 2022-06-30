@@ -6,6 +6,7 @@ use glfw::{Key, Action};
 
 use cgmath::{vec2, Vector2, vec3, Matrix4, ortho, dot};
 use cgmath::prelude::*;
+use rand::prelude::*;
 
 use crate::ball::Ball;
 use crate::game_level::GameLevel;
@@ -14,6 +15,7 @@ use crate::lib::post_processor::PostProcessor;
 use crate::lib::shader::Shader;
 use crate::lib::sprite_renderer::SpriteRenderer;
 use crate::particle::ParticleGenerator;
+use crate::power_up::PowerUp;
 use crate::resource_manager::ResourceManager;
 
 // Represents the current state of the game
@@ -77,12 +79,13 @@ pub struct Game {
     pub ball: Ball,
     pub levels: Vec<GameLevel>,
     pub actual_level: usize,
+    pub power_ups: Vec<PowerUp>,
     shake_time: f32
 }
 
 impl Game {
-    pub fn new(width: u32, height: u32) -> Game {
-        let game = Game {
+    pub fn new(width: u32, height: u32) -> Self {
+        Game {
             state: GameState::GameActive,
             width: width,
             height: height,
@@ -90,10 +93,9 @@ impl Game {
             ball: Ball::new_empty(),
             levels: Vec::new(),
             actual_level: 0,
+            power_ups: Vec::new(),
             shake_time: 0.0
-        };
-
-        game
+        }
     }
 
     pub unsafe fn init(&mut self) {
@@ -131,6 +133,7 @@ impl Game {
         RESOURCES.lock().unwrap().load_texture("resources/textures/block_solid.png", false, "block_solid");
         let player_texture = RESOURCES.lock().unwrap().load_texture("resources/textures/paddle.png", true, "paddle");
         let particle_texture = RESOURCES.lock().unwrap().load_texture("resources/textures/particle.png", true, "particle");
+        RESOURCES.lock().unwrap().load_texture("resources/textures/powerup_confuse.png", false, "powerup_confuse");
 
         // load levels
         let mut one = GameLevel::new();
@@ -169,8 +172,10 @@ impl Game {
     pub fn update(&mut self, dt: f32) {
         // update objects
         self.ball.move_ball(dt, self.width);
+        
         // check for collisions
         self.do_collisions();
+        
         // update particles
         unsafe {
             PARTICLE_GENERATOR.update(
@@ -180,6 +185,8 @@ impl Game {
                 vec2(self.ball.radius / 2.0, self.ball.radius / 2.0)
             );
         }
+
+        // update effects
         if self.shake_time > 0.0 {
             self.shake_time -= dt;
             if self.shake_time <= 0.0 {
@@ -188,6 +195,7 @@ impl Game {
                 }
             }
         }
+
         // check loss condition
         if self.ball.game_object.position.y >= self.height as f32 {
             self.reset_level();
@@ -297,6 +305,9 @@ impl Game {
                     // destroy block if not solid
                     if !brick.is_solid {
                         brick.destroyed = true;
+                        if let Some(power_up) = spawn_power_ups(brick.position) {
+                            self.power_ups.push(power_up);
+                        }
                     } else { // if block is solid, enable shake effect
                         self.shake_time = 0.05;
                         unsafe {
@@ -349,6 +360,25 @@ impl Game {
             // fix sticky paddle
             self.ball.game_object.velocity.y = -1.0 * self.ball.game_object.velocity.y.abs();
         }
+    }
+
+}
+
+pub fn spawn_power_ups(pos: Vector2<f32>) -> Option<PowerUp> {
+    let resources = RESOURCES.lock().unwrap();
+
+    if power_up_should_spawn(15) {
+        let power_up = PowerUp::new(
+            pos, 
+            vec3(1.0, 0.3, 0.3),
+            resources.get_texture("powerup_confuse"),
+            "confuse",
+            15.0,
+            false);
+
+        Some(power_up)
+    } else {
+        None
     }
 }
 
@@ -418,4 +448,10 @@ fn vector_direction(target: Vector2<f32>) -> Direction {
     };
 
     Direction::from_i8(best_match)
+}
+
+fn power_up_should_spawn(chance: u32) -> bool {
+    let mut rng = rand::thread_rng();
+    let random: u32 = rng.gen::<u32>() % chance;
+    random == 0
 }

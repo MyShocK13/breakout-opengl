@@ -3,7 +3,7 @@ use std::mem;
 use std::os::raw::c_void;
 use std::ptr;
 
-use cgmath::{ vec2, vec4, Vector2, Vector4 };
+use cgmath::{vec2, vec4, Vector2, Vector4};
 use gl;
 use self::gl::types::*;
 use rand::prelude::*;
