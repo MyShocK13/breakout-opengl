@@ -133,7 +133,7 @@ impl Game {
         RESOURCES.lock().unwrap().load_texture("resources/textures/block_solid.png", false, "block_solid");
         let player_texture = RESOURCES.lock().unwrap().load_texture("resources/textures/paddle.png", true, "paddle");
         let particle_texture = RESOURCES.lock().unwrap().load_texture("resources/textures/particle.png", true, "particle");
-        RESOURCES.lock().unwrap().load_texture("resources/textures/powerup_confuse.png", false, "powerup_confuse");
+        RESOURCES.lock().unwrap().load_texture("resources/textures/powerup_confuse.png", true, "powerup_confuse");
 
         // load levels
         let mut one = GameLevel::new();
@@ -172,10 +172,8 @@ impl Game {
     pub fn update(&mut self, dt: f32) {
         // update objects
         self.ball.move_ball(dt, self.width);
-        
         // check for collisions
         self.do_collisions();
-        
         // update particles
         unsafe {
             PARTICLE_GENERATOR.update(
@@ -185,7 +183,8 @@ impl Game {
                 vec2(self.ball.radius / 2.0, self.ball.radius / 2.0)
             );
         }
-
+        // update PowerUps
+        self.update_power_ups(dt);
         // update effects
         if self.shake_time > 0.0 {
             self.shake_time -= dt;
@@ -195,7 +194,6 @@ impl Game {
                 }
             }
         }
-
         // check loss condition
         if self.ball.game_object.position.y >= self.height as f32 {
             self.reset_level();
@@ -215,6 +213,12 @@ impl Game {
             self.levels[self.actual_level].draw(&RENDERER);
             // draw player
             self.player.draw(&RENDERER);
+            // draw powerups
+            for power_up in &self.power_ups {
+                if !power_up.game_object.destroyed {
+                    power_up.game_object.draw(&RENDERER);
+                }
+            }
             // draw particles	
             PARTICLE_GENERATOR.draw();
             // draw ball
@@ -362,12 +366,36 @@ impl Game {
         }
     }
 
+    fn update_power_ups(&mut self, dt: f32) {
+        let power_up_list = &self.power_ups.clone();
+
+        for power_up in &mut self.power_ups {
+            power_up.game_object.position += power_up.game_object.velocity;
+
+            if power_up.activated {
+                power_up.duration -= dt;
+
+                if power_up.duration <= 0.0 {
+                    // remove powerup from list (will later be removed)
+                    power_up.activated = false;
+                    // deactivate effects
+                    if power_up.pw_type == "confuse" {
+                        if !is_other_power_up_active(&power_up_list, "confuse".to_string()) {
+                            unsafe {
+                                POST_PROCESSOR.confuse = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
-pub fn spawn_power_ups(pos: Vector2<f32>) -> Option<PowerUp> {
+fn spawn_power_ups(pos: Vector2<f32>) -> Option<PowerUp> {
     let resources = RESOURCES.lock().unwrap();
 
-    if power_up_should_spawn(15) {
+    if power_up_should_spawn(1) {
         let power_up = PowerUp::new(
             pos, 
             vec3(1.0, 0.3, 0.3),
@@ -380,6 +408,24 @@ pub fn spawn_power_ups(pos: Vector2<f32>) -> Option<PowerUp> {
     } else {
         None
     }
+}
+
+fn power_up_should_spawn(chance: u32) -> bool {
+    let mut rng = rand::thread_rng();
+    let random: u32 = rng.gen::<u32>() % chance;
+    random == 0
+}
+
+fn is_other_power_up_active(power_ups: &Vec<PowerUp>, pw_type: String) -> bool {
+    // Check if another PowerUp of the same type is still active
+    // in which case we don't disable its effect (yet)
+    for power_up in power_ups {
+        if power_up.activated && power_up.pw_type == pw_type {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 // AABB - AABB collision
@@ -448,10 +494,4 @@ fn vector_direction(target: Vector2<f32>) -> Direction {
     };
 
     Direction::from_i8(best_match)
-}
-
-fn power_up_should_spawn(chance: u32) -> bool {
-    let mut rng = rand::thread_rng();
-    let random: u32 = rng.gen::<u32>() % chance;
-    random == 0
 }
