@@ -298,6 +298,13 @@ impl Game {
         self.player.position = player_pos;
 
         self.ball.reset(ball_pos, INITIAL_BALL_VELOCITY);
+
+        // also disable all active powerups
+        unsafe {
+            POST_PROCESSOR.confuse = false;
+        }
+
+        self.power_ups.clear();
     }
 
     pub fn do_collisions(&mut self) {
