@@ -3,7 +3,7 @@ use cgmath::{ vec2, vec3, Vector2, Vector3 };
 use crate::lib::texture::Texture2D;
 use crate::lib::sprite_renderer::SpriteRenderer;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct GameObject {
     // object state
     pub position: Vector2<f32>,

@@ -348,6 +348,23 @@ impl Game {
             }
         }
 
+        // also check collisions on PowerUps and if so, activate them
+        for power_up in &mut self.power_ups {
+            if !power_up.game_object.destroyed {
+                // first check if powerup passed bottom edge, if so: keep as inactive and destroy
+                if power_up.game_object.position.y >= self.height as f32 {
+                    power_up.game_object.destroyed = true;
+                }
+
+                if check_square_collision(&self.player, &power_up.game_object) {
+                    // collided with player, now activate powerup
+                    activate_power_up(power_up);
+                    power_up.game_object.destroyed = true;
+                    power_up.activated = true;
+                }
+            }
+        }
+
         // check collisions for player pad (unless stuck)
         let pad_collision: Collision = check_circle_collision(&self.ball, &self.player);
         if !self.ball.stuck && pad_collision.0 {
@@ -367,7 +384,7 @@ impl Game {
     }
 
     fn update_power_ups(&mut self, dt: f32) {
-        let power_up_list = &self.power_ups.clone();
+        let mut power_up_list = self.power_ups.clone();
 
         for power_up in &mut self.power_ups {
             power_up.game_object.position += power_up.game_object.velocity;
@@ -378,6 +395,11 @@ impl Game {
                 if power_up.duration <= 0.0 {
                     // remove powerup from list (will later be removed)
                     power_up.activated = false;
+
+                    if let Some(pos) = power_up_list.iter().position(|pu| (pu.pw_type == power_up.pw_type) && pu.activated ) {
+                        power_up_list[pos].activated = false;
+                    }
+
                     // deactivate effects
                     if power_up.pw_type == "confuse" {
                         if !is_other_power_up_active(&power_up_list, "confuse".to_string()) {
@@ -389,6 +411,9 @@ impl Game {
                 }
             }
         }
+
+        // self.power_ups.retain(|pu| pu.duration > 0.0);
+        self.power_ups.retain(|pu| pu.duration > 0.0);
     }
 }
 
@@ -401,7 +426,7 @@ fn spawn_power_ups(pos: Vector2<f32>) -> Option<PowerUp> {
             vec3(1.0, 0.3, 0.3),
             resources.get_texture("powerup_confuse"),
             "confuse",
-            15.0,
+            5.0,
             false);
 
         Some(power_up)
@@ -428,8 +453,22 @@ fn is_other_power_up_active(power_ups: &Vec<PowerUp>, pw_type: String) -> bool {
     return false;
 }
 
+fn activate_power_up(power_up: &PowerUp) {
+    let pw_type = power_up.pw_type.as_str();
+
+    match pw_type {
+        "confuse" => unsafe {
+            if !POST_PROCESSOR.chaos {
+                POST_PROCESSOR.confuse = true;
+            }
+        }
+
+        &_ => {}
+    }
+}
+
 // AABB - AABB collision
-fn _check_square_collision(one: &GameObject, two: &GameObject) -> bool {
+fn check_square_collision(one: &GameObject, two: &GameObject) -> bool {
     // collision x-axis?
     let collision_x = one.position.x + one.size.x >= two.position.x && two.position.x + two.size.x >= one.position.x;
     // collision y-axis?

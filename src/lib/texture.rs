@@ -1,7 +1,7 @@
 use std::os::raw::c_void;
 use std::ptr;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Texture2D {
     // holds the ID of the texture object, used for all texture operations to reference to this particlar texture
     pub id: u32,

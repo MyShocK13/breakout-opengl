@@ -6,7 +6,7 @@ use crate::lib::texture::Texture2D;
 const SIZE: Vector2<f32> = vec2(60.0, 20.0);
 const VELOCITY: Vector2<f32> = vec2(0.0, 1.0);
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PowerUp {
     pub game_object: GameObject,
     // powerup state
