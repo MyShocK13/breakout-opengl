@@ -19,7 +19,7 @@ use crate::power_up::PowerUp;
 use crate::resource_manager::ResourceManager;
 
 // Represents the current state of the game
-#[derive(PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum GameState {
     GameActive,
     // GameMenu,
@@ -113,7 +113,7 @@ impl Game {
         let effects_shader = RESOURCES.lock().unwrap().load_shader(
             "resources/shaders/effects_vs.glsl",
             "resources/shaders/effects_fs.glsl",
-            "particle"
+            "effects"
         );
 
         // configure shaders
@@ -133,6 +133,10 @@ impl Game {
         RESOURCES.lock().unwrap().load_texture("resources/textures/block_solid.png", false, "block_solid");
         let player_texture = RESOURCES.lock().unwrap().load_texture("resources/textures/paddle.png", true, "paddle");
         let particle_texture = RESOURCES.lock().unwrap().load_texture("resources/textures/particle.png", true, "particle");
+        RESOURCES.lock().unwrap().load_texture("resources/textures/powerup_sticky.png", true, "powerup_sticky");
+        RESOURCES.lock().unwrap().load_texture("resources/textures/powerup_speed.png", true, "powerup_speed");
+        RESOURCES.lock().unwrap().load_texture("resources/textures/powerup_passthrough.png", true, "powerup_passthrough");
+        RESOURCES.lock().unwrap().load_texture("resources/textures/powerup_increase.png", true, "powerup_increase");
         RESOURCES.lock().unwrap().load_texture("resources/textures/powerup_confuse.png", true, "powerup_confuse");
         RESOURCES.lock().unwrap().load_texture("resources/textures/powerup_chaos.png", true, "powerup_chaos");
 
@@ -301,6 +305,7 @@ impl Game {
         self.ball.reset(ball_pos, INITIAL_BALL_VELOCITY);
 
         // also disable all active powerups
+        self.player.color = vec3(1.0, 1.0, 1.0);
         unsafe {
             POST_PROCESSOR.confuse = false;
             POST_PROCESSOR.chaos = false;
@@ -332,26 +337,28 @@ impl Game {
                     let diff_vector = collision.2;
                     let mut penetration = 0.0;
 
-                    match dir {
-                        Direction::Left | Direction::Right => {
-                            self.ball.game_object.velocity.x = -self.ball.game_object.velocity.x; // reverse horizontal velocity
-                            // relocate
-                            penetration = self.ball.radius - diff_vector.x.abs();
-                        },
-                        Direction::Up | Direction::Down => {
-                            self.ball.game_object.velocity.y = -self.ball.game_object.velocity.y; // reverse vertical velocity
-                            // relocate
-                            penetration = self.ball.radius - diff_vector.y.abs();
-                        },
-                        _ => ()
-                    }
-
-                    match dir {
-                        Direction::Left => self.ball.game_object.position.x += penetration, // move ball to right
-                        Direction::Right => self.ball.game_object.position.x -= penetration, // move ball to left
-                        Direction::Up => self.ball.game_object.position.y += penetration, // move ball back up
-                        Direction::Down => self.ball.game_object.position.y -= penetration, // move ball back down
-                        _ => ()
+                    if !(self.ball.passthrough && !brick.is_solid) {
+                        match dir {
+                            Direction::Left | Direction::Right => {
+                                self.ball.game_object.velocity.x = -self.ball.game_object.velocity.x; // reverse horizontal velocity
+                                // relocate
+                                penetration = self.ball.radius - diff_vector.x.abs();
+                            },
+                            Direction::Up | Direction::Down => {
+                                self.ball.game_object.velocity.y = -self.ball.game_object.velocity.y; // reverse vertical velocity
+                                // relocate
+                                penetration = self.ball.radius - diff_vector.y.abs();
+                            },
+                            _ => ()
+                        }
+    
+                        match dir {
+                            Direction::Left => self.ball.game_object.position.x += penetration, // move ball to right
+                            Direction::Right => self.ball.game_object.position.x -= penetration, // move ball to left
+                            Direction::Up => self.ball.game_object.position.y += penetration, // move ball back up
+                            Direction::Down => self.ball.game_object.position.y -= penetration, // move ball back down
+                            _ => ()
+                        }
                     }
                 }
             }
@@ -367,7 +374,34 @@ impl Game {
 
                 if check_square_collision(&self.player, &power_up.game_object) {
                     // collided with player, now activate powerup
-                    activate_power_up(power_up);
+                    let pw_type = power_up.pw_type.as_str();
+                    match pw_type {
+                        "sticky" => {
+                            self.ball.sticky = true;
+                            self.player.color = vec3(1.0, 0.5, 1.0);
+                        }
+                        "speed" => {
+                            self.ball.game_object.velocity *= 1.2;
+                        }
+                        "passthrough" => {
+                            self.ball.passthrough = true;
+                            self.ball.game_object.color = vec3(1.0, 0.5, 0.5);
+                        }
+                        "increase" => {
+                            self.player.size.x += 50.0;
+                        }
+                        "confuse" => unsafe {
+                            if !POST_PROCESSOR.chaos {
+                                POST_PROCESSOR.confuse = true;
+                            }
+                        }
+                        "chaos" => unsafe {
+                            if !POST_PROCESSOR.confuse {
+                                POST_PROCESSOR.chaos = true;
+                            }
+                        }
+                        &_ => {}
+                    }
                     power_up.game_object.destroyed = true;
                     power_up.activated = true;
                 }
@@ -389,6 +423,9 @@ impl Game {
             self.ball.game_object.velocity = self.ball.game_object.velocity.normalize() * length(old_velocity); // keep speed consistent over both axes (multiply by length of old velocity, so total strength is not changed)
             // fix sticky paddle
             self.ball.game_object.velocity.y = -1.0 * self.ball.game_object.velocity.y.abs();
+
+            // if Sticky powerup is activated, also stick ball to paddle once new velocity vectors were calculated
+            self.ball.stuck = self.ball.sticky;
         }
     }
 
@@ -410,6 +447,28 @@ impl Game {
                     }
 
                     // deactivate effects
+                    if power_up.pw_type == "sticky" {
+                        if !is_other_power_up_active(&power_up_list, "sticky".to_string()) {
+                            self.ball.sticky = false;
+                            self.player.color = vec3(1.0, 1.0, 1.0);
+                        }
+                    }
+                    if power_up.pw_type == "speed" {
+                        if !is_other_power_up_active(&power_up_list, "speed".to_string()) {
+                            self.ball.game_object.velocity /= 1.2;
+                        }
+                    }
+                    if power_up.pw_type == "passthrough" {
+                        if !is_other_power_up_active(&power_up_list, "passthrough".to_string()) {
+                            self.ball.passthrough = false;
+                            self.ball.game_object.color = vec3(1.0, 1.0, 1.0);
+                        }
+                    }
+                    if power_up.pw_type == "increase" {
+                        if !is_other_power_up_active(&power_up_list, "increase".to_string()) {
+                            self.player.size.x -= 50.0;
+                        }
+                    }
                     if power_up.pw_type == "confuse" {
                         if !is_other_power_up_active(&power_up_list, "confuse".to_string()) {
                             unsafe {
@@ -436,24 +495,18 @@ impl Game {
 fn spawn_power_ups(pos: Vector2<f32>) -> Option<PowerUp> {
     let resources = RESOURCES.lock().unwrap();
 
-    if power_up_should_spawn(15) {
-        let power_up = PowerUp::new(
-            pos, 
-            vec3(1.0, 0.3, 0.3),
-            resources.get_texture("powerup_confuse"),
-            "confuse",
-            15.0,
-            false);
-
-        Some(power_up)
-    } else if power_up_should_spawn(1) {
-        Some(PowerUp::new(
-            pos, 
-            vec3(0.9, 0.25, 0.25),
-            resources.get_texture("powerup_chaos"),
-            "chaos",
-            15.0,
-            false))
+    if power_up_should_spawn(75) {
+        Some(PowerUp::new(pos, vec3(1.0, 0.5, 1.0), resources.get_texture("powerup_sticky"), "sticky", 15.0, false))
+    } else if power_up_should_spawn(75) {
+        Some(PowerUp::new(pos, vec3(0.5, 0.5, 1.0), resources.get_texture("powerup_speed"), "speed", 15.0, false))
+    } else if power_up_should_spawn(75) {
+        Some(PowerUp::new(pos, vec3(0.5, 1.0, 0.5), resources.get_texture("powerup_passthrough"), "passthrough", 10.0, false))
+    } else if power_up_should_spawn(75) {
+        Some(PowerUp::new(pos, vec3(1.0, 0.6, 0.4), resources.get_texture("powerup_increase"), "increase", 15.0, false))
+    } else if power_up_should_spawn(15) {
+        Some(PowerUp::new(pos, vec3(1.0, 0.3, 0.3), resources.get_texture("powerup_confuse"), "confuse", 15.0, false))
+    } else if power_up_should_spawn(15) {
+        Some(PowerUp::new(pos, vec3(0.9, 0.25, 0.25), resources.get_texture("powerup_chaos"), "chaos", 15.0, false))
     } else {
         None
     }
@@ -475,26 +528,6 @@ fn is_other_power_up_active(power_ups: &Vec<PowerUp>, pw_type: String) -> bool {
     }
 
     return false;
-}
-
-fn activate_power_up(power_up: &PowerUp) {
-    let pw_type = power_up.pw_type.as_str();
-
-    match pw_type {
-        "confuse" => unsafe {
-            if !POST_PROCESSOR.chaos {
-                POST_PROCESSOR.confuse = true;
-            }
-        }
-        
-        "chaos" => unsafe {
-            if !POST_PROCESSOR.confuse {
-                POST_PROCESSOR.chaos = true;
-            }
-        }
-
-        &_ => {}
-    }
 }
 
 // AABB - AABB collision

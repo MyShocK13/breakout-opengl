@@ -4,25 +4,28 @@ use crate::game_object::GameObject;
 use crate::lib::sprite_renderer::SpriteRenderer;
 use crate::lib::texture::Texture2D;
 
+#[derive(Copy, Clone)]
 pub struct Ball {
     pub game_object: GameObject,
     pub radius: f32,
     pub stuck: bool,
+    pub sticky: bool,
+    pub passthrough: bool,
 }
 
 impl Ball {
     pub fn new_empty() -> Self {
-        let ball = Ball {
+        Ball {
             game_object: GameObject::new_empty(),
             radius: 12.5,
             stuck: true,
-        };
-        
-        ball
+            sticky: false,
+            passthrough: false,
+        }
     }
 
     pub fn new(pos: Vector2<f32>, radius: f32, velocity: Vector2<f32>, sprite: Texture2D) -> Self {
-        let ball = Ball {
+        Ball {
             game_object: GameObject::new(
                 pos,
                 vec2(radius * 2.0, radius * 2.0),
@@ -32,9 +35,9 @@ impl Ball {
             ),
             radius: radius,
             stuck: true,
-        };
-
-        ball
+            sticky: false,
+            passthrough: false,
+        }
     }
 
     pub fn move_ball(&mut self, dt: f32, window_width: u32) -> Vector2<f32> {
@@ -67,6 +70,9 @@ impl Ball {
     pub fn reset(&mut self, position: Vector2<f32>, velocity: Vector2<f32>) {
         self.game_object.position = position;
         self.game_object.velocity = velocity;
+        self.game_object.color = vec3(1.0, 1.0, 1.0);
         self.stuck = true;
+        self.sticky = false;
+        self.passthrough = false;
     }
 }
