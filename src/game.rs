@@ -134,6 +134,7 @@ impl Game {
         let player_texture = RESOURCES.lock().unwrap().load_texture("resources/textures/paddle.png", true, "paddle");
         let particle_texture = RESOURCES.lock().unwrap().load_texture("resources/textures/particle.png", true, "particle");
         RESOURCES.lock().unwrap().load_texture("resources/textures/powerup_confuse.png", true, "powerup_confuse");
+        RESOURCES.lock().unwrap().load_texture("resources/textures/powerup_chaos.png", true, "powerup_chaos");
 
         // load levels
         let mut one = GameLevel::new();
@@ -302,6 +303,7 @@ impl Game {
         // also disable all active powerups
         unsafe {
             POST_PROCESSOR.confuse = false;
+            POST_PROCESSOR.chaos = false;
         }
 
         self.power_ups.clear();
@@ -415,6 +417,13 @@ impl Game {
                             }
                         }
                     }
+                    if power_up.pw_type == "chaos" {
+                        if !is_other_power_up_active(&power_up_list, "chaos".to_string()) {
+                            unsafe {
+                                POST_PROCESSOR.chaos = false;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -427,16 +436,24 @@ impl Game {
 fn spawn_power_ups(pos: Vector2<f32>) -> Option<PowerUp> {
     let resources = RESOURCES.lock().unwrap();
 
-    if power_up_should_spawn(1) {
+    if power_up_should_spawn(15) {
         let power_up = PowerUp::new(
             pos, 
             vec3(1.0, 0.3, 0.3),
             resources.get_texture("powerup_confuse"),
             "confuse",
-            5.0,
+            15.0,
             false);
 
         Some(power_up)
+    } else if power_up_should_spawn(1) {
+        Some(PowerUp::new(
+            pos, 
+            vec3(0.9, 0.25, 0.25),
+            resources.get_texture("powerup_chaos"),
+            "chaos",
+            15.0,
+            false))
     } else {
         None
     }
@@ -467,6 +484,12 @@ fn activate_power_up(power_up: &PowerUp) {
         "confuse" => unsafe {
             if !POST_PROCESSOR.chaos {
                 POST_PROCESSOR.confuse = true;
+            }
+        }
+        
+        "chaos" => unsafe {
+            if !POST_PROCESSOR.confuse {
+                POST_PROCESSOR.chaos = true;
             }
         }
 
