@@ -1,5 +1,5 @@
 [package]
-name = "opengl"
+name = "breakout"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,3 +10,6 @@ glfw = "0.45.0"
 gl = "0.14.0"
 image = "0.24.2"
 cgmath = "0.18.0"
+lazy_static = "1.2.0"
+rand = "0.8.5"
+cpal = "0.13.5"
