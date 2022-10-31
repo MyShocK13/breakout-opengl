@@ -7,6 +7,8 @@ use glfw::{Key, Action};
 use cgmath::{vec2, Vector2, vec3, Matrix4, ortho, dot};
 use cgmath::prelude::*;
 use rand::prelude::*;
+use cpal::{Data, Sample, SampleFormat};
+use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
 use crate::ball::Ball;
 use crate::game_level::GameLevel;
@@ -19,7 +21,7 @@ use crate::power_up::PowerUp;
 use crate::resource_manager::ResourceManager;
 
 // Represents the current state of the game
-#[derive(Copy, Clone, PartialEq)]
+#[derive(PartialEq)]
 pub enum GameState {
     GameActive,
     // GameMenu,
@@ -77,10 +79,10 @@ pub struct Game {
     pub height: u32,
     pub player: GameObject,
     pub ball: Ball,
-    pub levels: Vec<GameLevel>,
-    pub actual_level: usize,
-    pub power_ups: Vec<PowerUp>,
-    shake_time: f32
+    levels: Vec<GameLevel>,
+    actual_level: usize,
+    power_ups: Vec<PowerUp>,
+    shake_time: f32,
 }
 
 impl Game {
@@ -172,6 +174,29 @@ impl Game {
             -BALL_RADIUS * 2.0
         );
         self.ball = Ball::new(ball_pos, BALL_RADIUS, INITIAL_BALL_VELOCITY, ball_texture);
+
+        // Sound initialization
+        let host = cpal::default_host();
+        let device = host.default_output_device().expect("no output device available");
+        
+        let mut supported_configs_range = device.supported_output_configs()
+            .expect("error while querying configs");
+        let supported_config = supported_configs_range.next()
+            .expect("no supported config?!")
+            .with_max_sample_rate();
+        
+        let err_fn = |err| eprintln!("an error occurred on the output audio stream: {}", err);
+        // let stream = device.build_output_stream(&config, write_silence, err_fn).unwrap();
+
+        let sample_format = supported_config.sample_format();
+        let config = supported_config.into();
+        let stream = device.build_output_stream(&config, write_silence, err_fn).unwrap();
+        // let stream = match sample_format {
+        //     SampleFormat::F32 => device.build_output_stream(&config, write_silence::<f32>, err_fn),
+        //     SampleFormat::I16 => device.build_output_stream(&config, write_silence::<i16>, err_fn),
+        //     SampleFormat::U16 => device.build_output_stream(&config, write_silence::<u16>, err_fn),
+        // }.unwrap();
+        stream.play().unwrap();
     }
 
     pub fn update(&mut self, dt: f32) {
@@ -596,4 +621,20 @@ fn vector_direction(target: Vector2<f32>) -> Direction {
     };
 
     Direction::from_i8(best_match)
+}
+
+// fn write_silence<T: Sample>(data: &mut [T], _: &cpal::OutputCallbackInfo) {
+//     for sample in data.iter_mut() {
+//         *sample = Sample::from(&0.0);
+//     }
+// }
+
+fn write_silence(data: &mut [f32], _: &cpal::OutputCallbackInfo) {
+    let mut counter = 0;
+    for sample in data.iter_mut() {
+        let s = if (counter / 20) % 2 == 0 { &1.0 } else { &0.0 };
+        counter = counter + 1;
+        *sample = Sample::from(s);
+    }
+    println!("{:?}", data);
 }
